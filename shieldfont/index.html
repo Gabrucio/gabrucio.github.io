@@ -31,7 +31,7 @@
         src:
           url("./shieldfont-serif-v2.woff2") format("woff2"),
           url("./shieldfont-serif-v2.ttf") format("truetype");
-        font-weight: normal;
+        font-weight: 1 999;
         font-style: normal;
         font-display: swap;
       }
@@ -909,12 +909,15 @@
         font-family: "ShieldFont Serif", serif !important;
         letter-spacing: normal !important;
         text-transform: none !important;
+        font-variant-ligatures: normal !important;
         font-feature-settings:
           "liga" 1,
           "calt" 1,
           "dlig" 1 !important;
-        font-variant-ligatures: common-ligatures contextual
-          discretionary-ligatures !important;
+        -webkit-font-feature-settings:
+          "liga" 1,
+          "calt" 1,
+          "dlig" 1 !important;
       }
 
       /* Editable proof area */
@@ -1969,7 +1972,7 @@
         const FONTS = [
           {
             label: "ShieldFont Serif",
-            family: "'Young Serif', serif",
+            family: "'ShieldFont Serif', serif",
             mode: "decoded",
           },
           { label: "Arial", family: "Arial, sans-serif", mode: "encoded" },
