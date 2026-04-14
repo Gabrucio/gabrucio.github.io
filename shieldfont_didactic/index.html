@@ -1,0 +1,1395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShieldFont — How It Works | Font-Based AI Text Protection</title>
+    <meta
+      name="description"
+      content="Learn how ShieldFont uses OpenType ligatures to protect your writing from AI scrapers. Interactive demos: from Caesar cipher to modern font-based encryption."
+    />
+    <meta property="og:title" content="ShieldFont — How It Works" />
+    <meta
+      property="og:description"
+      content="From Caesar cipher to font-based encryption. A didactic guide to ShieldFont for type designers and foundries."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://s-a.website/shieldfont_didactic/" />
+    <meta name="theme-color" content="#1a1e20" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>"
+    />
+    <style>
+      @font-face {
+        font-family: "ShieldFont Serif";
+        src:
+          url("../shieldfont/shieldfont-serif.woff2") format("woff2"),
+          url("../shieldfont/shieldfont-serif.ttf") format("truetype");
+        font-weight: 1 999;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        --bg: #1a1e20;
+        --bg2: #232829;
+        --bg3: #2c3133;
+        --border: #3a4044;
+        --border-d: #2e3337;
+        --g: #00ff79;
+        --gd: #00cc62;
+        --g-dim: rgba(0, 255, 121, 0.1);
+        --g-glow: rgba(0, 255, 121, 0.06);
+        --cream: #faf5ee;
+        --cream-t: #1a1a1a;
+        --cream-s: #666;
+        --cream-b: #e0d9ce;
+        --text: #e8e4df;
+        --dim: #999;
+        --muted: #666;
+        --ac: #2dd07a;
+        --r: 10px;
+        --mono: "JetBrains Mono", monospace;
+        --serif: "ShieldFont Serif", serif;
+        --sans: "Inter", sans-serif;
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      ::selection {
+        background: var(--g);
+        color: #000;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+      :focus-visible {
+        outline: 2px solid var(--g);
+        outline-offset: 3px;
+      }
+
+      /* grain */
+      .grain {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.018;
+        mix-blend-mode: overlay;
+      }
+      .grain::after {
+        content: "";
+        position: absolute;
+        inset: -100%;
+        width: 300%;
+        height: 300%;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        animation: grain 6s steps(5) infinite;
+      }
+      @keyframes grain {
+        0%, 100% { transform: translate(0); }
+        20% { transform: translate(-4%, -8%); }
+        40% { transform: translate(6%, -12%); }
+        60% { transform: translate(-8%, 4%); }
+        80% { transform: translate(3%, 7%); }
+      }
+
+      /* wrap */
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 0 clamp(20px, 4vw, 48px);
+      }
+      section {
+        padding: clamp(56px, 8vh, 100px) 0;
+      }
+      .divider {
+        height: 1px;
+        background: var(--border-d);
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 clamp(20px, 4vw, 48px);
+        background: rgba(26, 30, 32, 0.88);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-d);
+      }
+      .nav-mark {
+        display: flex;
+        align-items: baseline;
+        gap: 1px;
+      }
+      .nav-shield {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--g);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .nav-font {
+        font-family: var(--serif);
+        font-size: 14px;
+        color: var(--text);
+      }
+      .nav-links {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+      .nav-links a {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        transition: color 0.15s;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+      .nav-dl {
+        padding: 5px 14px;
+        background: var(--text);
+        color: var(--bg);
+        border-radius: 8px;
+        font-weight: 700;
+      }
+      .nav-dl:hover {
+        background: var(--g);
+        color: #000;
+      }
+
+      /* SECTION HEADERS */
+      .sec-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+      .sec-title {
+        font-family: var(--serif);
+        font-size: clamp(24px, 3.5vw, 38px);
+        color: var(--text);
+        margin-bottom: 8px;
+        line-height: 1.2;
+      }
+      .sec-sub {
+        font-size: 14px;
+        color: var(--dim);
+        line-height: 1.6;
+        max-width: 520px;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 24px;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: none;
+      }
+      .btn svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .btn-primary {
+        background: var(--text);
+        color: var(--bg);
+        border: 1px solid var(--text);
+        border-radius: 8px;
+      }
+      .btn-primary:hover {
+        background: var(--g);
+        border-color: var(--g);
+        color: #000;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .btn-ghost:hover {
+        border-color: var(--text);
+      }
+
+      /* HERO */
+      .hero {
+        padding-top: clamp(72px, 10vh, 110px);
+        padding-bottom: clamp(32px, 4vh, 56px);
+        text-align: center;
+      }
+      .hero-logo {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .hero-logo-text {
+        display: inline-flex;
+        align-items: center;
+        gap: clamp(8px, 1.6vw, 18px);
+      }
+      .hero-ascii {
+        font-family: var(--mono);
+        white-space: pre;
+        line-height: 1.15;
+        font-size: clamp(7.5px, 1.4vw, 13px);
+        color: var(--g);
+        text-shadow:
+          0 0 6px rgba(0, 255, 121, 0.4),
+          0 0 14px rgba(0, 255, 121, 0.15),
+          0 0 30px var(--g-glow);
+        flex-shrink: 0;
+        text-align: left;
+      }
+      .hero-font {
+        font-family: var(--serif);
+        font-size: clamp(48px, 8vw, 86px);
+        color: var(--text);
+        line-height: 1;
+        position: relative;
+        top: 2px;
+      }
+      .hero-sub {
+        font-family: var(--sans);
+        font-size: clamp(15px, 1.6vw, 18px);
+        color: var(--dim);
+        line-height: 1.7;
+        max-width: 560px;
+        margin: 0 auto 28px;
+      }
+      .hero-sub em {
+        color: var(--g);
+        font-style: normal;
+        font-weight: 600;
+      }
+      .hero-badge {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--g);
+        margin-bottom: 20px;
+        padding: 6px 16px;
+        border: 1px solid var(--g-dim);
+        border-radius: 100px;
+        background: var(--g-dim);
+      }
+      .hero-cta {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      /* Chapter number */
+      .ch-num {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--g);
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+      }
+
+      /* Caesar cipher demo */
+      .caesar-box {
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+        margin-top: 24px;
+      }
+      .caesar-bar {
+        display: flex;
+        align-items: center;
+        height: 34px;
+        padding: 0 14px;
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+        gap: 7px;
+      }
+      .caesar-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .caesar-dot:nth-child(1) { background: #ff5f56; }
+      .caesar-dot:nth-child(2) { background: #ffbd2e; }
+      .caesar-dot:nth-child(3) { background: #27c93f; }
+      .caesar-filename {
+        flex: 1;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .caesar-body {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0;
+      }
+      .caesar-pane {
+        padding: clamp(16px, 2.5vw, 28px);
+      }
+      .caesar-pane-input {
+        background: var(--cream);
+      }
+      .caesar-pane-output {
+        background: var(--bg2);
+        border-left: 1px solid var(--border);
+      }
+      .caesar-pane-label {
+        font-family: var(--mono);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .caesar-pane-input .caesar-pane-label { color: var(--cream-s); }
+      .caesar-pane-output .caesar-pane-label { color: var(--gd); }
+      .caesar-textarea {
+        width: 100%;
+        min-height: 80px;
+        border: none;
+        outline: none;
+        resize: vertical;
+        font-family: var(--serif);
+        font-size: clamp(14px, 1.8vw, 18px);
+        line-height: 1.7;
+        color: var(--cream-t);
+        background: transparent;
+      }
+      .caesar-result {
+        font-family: var(--mono);
+        font-size: clamp(13px, 1.6vw, 17px);
+        font-weight: 600;
+        line-height: 1.8;
+        color: var(--g);
+        letter-spacing: 0.8px;
+        text-shadow: 0 0 4px var(--g-glow);
+        min-height: 80px;
+        word-break: break-word;
+      }
+      .caesar-mid {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        padding: 0 14px;
+        flex-shrink: 0;
+      }
+      .caesar-mid svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--muted);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .shift-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 20px;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .shift-bar label {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .shift-slider {
+        -webkit-appearance: none;
+        width: 200px;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--border);
+        outline: none;
+        cursor: pointer;
+      }
+      .shift-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--g);
+        cursor: pointer;
+        box-shadow: 0 0 8px var(--g-glow);
+      }
+      .shift-val {
+        font-family: var(--mono);
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--g);
+        min-width: 24px;
+        text-align: center;
+      }
+      .letter-grid {
+        display: flex;
+        gap: 2px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 12px 20px 16px;
+        background: var(--bg);
+        border-top: 1px solid var(--border-d);
+        font-family: var(--mono);
+        font-size: 9px;
+      }
+      .lp {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 3px 4px;
+        border-radius: 4px;
+        background: var(--bg2);
+        border: 1px solid var(--border-d);
+      }
+      .lp-from { color: var(--dim); }
+      .lp-arrow { color: var(--gd); font-size: 7px; }
+      .lp-to { color: var(--g); }
+
+      /* Takeaway */
+      .takeaway {
+        margin-top: 28px;
+        padding: 18px 22px;
+        background: var(--g-dim);
+        border: 1px solid rgba(0, 255, 121, 0.15);
+        border-radius: var(--r);
+        border-left: 3px solid var(--g);
+      }
+      .takeaway p {
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.6;
+        font-weight: 500;
+      }
+
+      /* Word lookup */
+      .lookup-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        max-width: 480px;
+        margin: 24px auto;
+      }
+      .lookup-input {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: var(--r);
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .lookup-input:focus { border-color: var(--g); }
+      .lookup-arrow {
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      .lookup-arrow svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .lookup-result {
+        font-family: var(--mono);
+        color: var(--g);
+        font-size: 14px;
+        font-weight: 600;
+        min-width: 130px;
+      }
+      .lookup-result.unmapped { color: var(--muted); font-weight: 400; }
+
+      /* Word map pills (reuse from main site) */
+      .maps {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        margin-top: 24px;
+      }
+      .map {
+        display: inline-flex;
+        align-items: stretch;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: var(--cream);
+      }
+      .map-w {
+        font-family: var(--mono);
+        font-size: clamp(13px, 1.6vw, 16px);
+        font-weight: 600;
+        color: var(--g);
+        background: var(--bg2);
+        padding: 12px 20px;
+        min-width: 140px;
+        text-align: center;
+        text-shadow: 0 0 4px var(--g-glow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .map-a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        padding: 0 14px;
+        background: var(--bg2);
+        border-left: 1px solid var(--border-d);
+        border-right: 1px solid var(--border-d);
+        flex-shrink: 0;
+      }
+      .map-a svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .map-r {
+        font-family: var(--serif);
+        font-size: clamp(16px, 2vw, 20px);
+        color: var(--cream-t);
+        background: var(--cream);
+        padding: 12px 20px;
+        min-width: 140px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .map-unmapped {
+        font-family: var(--sans);
+        font-size: 12px;
+        color: var(--cream-s);
+        font-style: italic;
+      }
+
+      /* Split screen / proof grid */
+      .proof-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin-top: 24px;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+      }
+      .proof-side {
+        padding: clamp(20px, 3vw, 32px);
+      }
+      .proof-ai {
+        background: var(--bg2);
+        border-left: 1px solid var(--border);
+      }
+      .proof-human {
+        background: var(--cream);
+      }
+      .proof-label {
+        font-family: var(--mono);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .proof-ai .proof-label { color: var(--gd); }
+      .proof-human .proof-label { color: var(--cream-s); }
+      .proof-ai-text {
+        font-family: var(--mono);
+        font-size: clamp(13px, 1.6vw, 17px);
+        font-weight: 600;
+        line-height: 1.8;
+        color: var(--g);
+        letter-spacing: 0.8px;
+        text-shadow: 0 0 4px var(--g-glow);
+      }
+      .proof-human-text {
+        font-family: var(--serif);
+        font-size: clamp(16px, 2.2vw, 22px);
+        line-height: 1.6;
+        color: var(--cream-t);
+      }
+      .proof-note {
+        text-align: center;
+        margin-top: 16px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.5px;
+      }
+      .proof-note strong { color: var(--text); }
+
+      /* Converter */
+      .conv-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+      }
+      .conv-half {
+        padding: clamp(16px, 2.5vw, 28px);
+      }
+      .conv-input-side {
+        background: var(--cream);
+      }
+      .conv-encoded-side {
+        background: var(--bg2);
+        border-left: 1px solid var(--border);
+      }
+      .conv-label {
+        font-family: var(--mono);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .conv-input-side .conv-label { color: var(--cream-s); }
+      .conv-encoded-side .conv-label { color: var(--gd); }
+      .conv-textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+      .conv-input-side .conv-textarea {
+        font-family: var(--serif);
+        color: var(--cream-t);
+      }
+      .conv-encoded-side .conv-textarea {
+        font-family: var(--mono);
+        color: var(--g);
+        letter-spacing: 0.5px;
+        caret-color: var(--g);
+        text-shadow: 0 0 4px var(--g-glow);
+      }
+      .conv-encoded-side .conv-textarea::placeholder {
+        color: rgba(0, 255, 121, 0.25);
+      }
+      .conv-input-side .conv-textarea::placeholder {
+        color: var(--cream-s);
+      }
+      .conv-preview {
+        margin-top: 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+      }
+      .conv-preview-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 34px;
+        padding: 0 14px;
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+      }
+      .conv-preview-label {
+        font-family: var(--mono);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .conv-preview-body {
+        padding: clamp(16px, 2.5vw, 28px);
+        background: var(--cream);
+        min-height: 60px;
+      }
+      .conv-preview-text {
+        font-family: var(--serif);
+        font-size: clamp(15px, 2vw, 18px);
+        line-height: 1.7;
+        color: var(--cream-t);
+      }
+      .copy-btn {
+        font-family: var(--mono);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .copy-btn:hover { border-color: var(--g); color: var(--g); }
+      .copy-btn.copied { border-color: var(--g); color: var(--g); }
+
+      /* Pitch cards */
+      .pitch-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        margin-top: 24px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+      }
+      .pitch-card {
+        background: var(--bg);
+        padding: clamp(20px, 2.5vw, 28px);
+      }
+      .pitch-n {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--g);
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+      }
+      .pitch-card h4 {
+        font-family: var(--sans);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+      .pitch-card p {
+        font-size: 12px;
+        color: var(--dim);
+        line-height: 1.55;
+      }
+
+      /* Install code block */
+      .code-block {
+        margin-top: 24px;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+      }
+      .code-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 34px;
+        padding: 0 14px;
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+      }
+      .code-bar-dots {
+        display: flex;
+        gap: 7px;
+      }
+      .code-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .code-dot:nth-child(1) { background: #ff5f56; }
+      .code-dot:nth-child(2) { background: #ffbd2e; }
+      .code-dot:nth-child(3) { background: #27c93f; }
+      .code-body {
+        padding: 16px 20px;
+        background: var(--bg);
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 2;
+        color: var(--g);
+      }
+      .ck { color: #ff79c6; }
+      .cs { color: #f1fa8c; }
+      .cp { color: #8be9fd; }
+
+      /* Footer */
+      footer {
+        padding: 24px 0;
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 9px;
+        color: var(--muted);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-top: 1px solid var(--border-d);
+      }
+      footer a {
+        color: var(--dim);
+        text-decoration: underline;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .proof-grid, .conv-grid { grid-template-columns: 1fr; }
+        .proof-ai { border-left: none; border-top: 1px solid var(--border); }
+        .conv-encoded-side { border-left: none; border-top: 1px solid var(--border); }
+        .pitch-grid { grid-template-columns: 1fr; }
+        .caesar-body { grid-template-columns: 1fr; }
+        .caesar-mid { border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px; }
+        .caesar-pane-output { border-left: none; border-top: 1px solid var(--border); }
+        .nav-links a:not(.nav-dl) { display: none; }
+        .hero-logo-text { gap: 8px; }
+        .map-w, .map-r { min-width: 108px; padding: 10px 14px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+        .grain { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <h1 class="sr-only">ShieldFont — How It Works: From Caesar Cipher to Font-Based Encryption</h1>
+
+    <!-- NAV -->
+    <nav class="nav">
+      <a href="../shieldfont/" class="nav-mark"
+        ><span class="nav-shield">SHIELD</span
+        ><span class="nav-font">Font</span></a
+      >
+      <div class="nav-links">
+        <a href="#caesar">Caesar Cipher</a>
+        <a href="#substitution">Word Map</a>
+        <a href="#font-magic">Font Magic</a>
+        <a href="#converter">Converter</a>
+        <a href="../shieldfont/shieldfont-serif.ttf" download class="nav-dl">Download</a>
+      </div>
+    </nav>
+
+    <div class="wrap">
+      <!-- HERO -->
+      <section class="hero">
+        <div class="hero-logo">
+          <div class="hero-logo-text">
+            <pre class="hero-ascii" role="img" aria-label="SHIELD">
+&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;   &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;      &#9608;&#9608;&#9608;&#9608;&#9608;
+&#9608;&#9608;      &#9608;&#9608;   &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;      &#9608;&#9608;      &#9608;&#9608;   &#9608;&#9608;
+&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;   &#9608;&#9608;      &#9608;&#9608;   &#9608;&#9608;
+     &#9608;&#9608; &#9608;&#9608;   &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;      &#9608;&#9608;      &#9608;&#9608;   &#9608;&#9608;
+&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;   &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;</pre
+            >
+            <span class="hero-font">Font</span>
+          </div>
+        </div>
+        <div class="hero-badge">How It Works</div>
+        <div class="hero-sub">
+          Fonts can do more than display text &mdash; they can <em>protect</em> it.
+          A step-by-step guide from ancient ciphers to modern font-based encryption.
+        </div>
+        <div class="hero-cta">
+          <a href="#caesar" class="btn btn-primary"
+            ><svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg
+            >Start the Journey</a
+          >
+          <a href="#converter" class="btn btn-ghost">Skip to Converter</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- CHAPTER 1: CAESAR CIPHER -->
+      <section id="caesar">
+        <div class="ch-num">CHAPTER 01</div>
+        <div class="sec-label">The Origin of Text Encryption</div>
+        <div class="sec-title">The Caesar Cipher</div>
+        <div class="sec-sub">
+          Julius Caesar protected military messages by shifting each letter
+          forward in the alphabet. Two thousand years later, the principle
+          remains: substitute one thing for another.
+        </div>
+
+        <div class="caesar-box">
+          <div class="caesar-bar">
+            <span class="caesar-dot"></span>
+            <span class="caesar-dot"></span>
+            <span class="caesar-dot"></span>
+            <span class="caesar-filename">caesar-cipher.txt</span>
+          </div>
+          <div class="caesar-body">
+            <div class="caesar-pane caesar-pane-input">
+              <div class="caesar-pane-label">Your Message</div>
+              <textarea id="caesarInput" class="caesar-textarea" spellcheck="false" placeholder="Type your message...">Hello World</textarea>
+            </div>
+            <div class="caesar-mid">
+              <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+            <div class="caesar-pane caesar-pane-output">
+              <div class="caesar-pane-label">Encrypted Output</div>
+              <div id="caesarOutput" class="caesar-result"></div>
+            </div>
+          </div>
+          <div class="shift-bar">
+            <label>Shift</label>
+            <input type="range" id="shiftSlider" class="shift-slider" min="0" max="25" value="0">
+            <span id="shiftVal" class="shift-val">3</span>
+          </div>
+          <div id="letterGrid" class="letter-grid"></div>
+        </div>
+
+        <div class="takeaway">
+          <p>Key takeaway: letter substitution is the oldest form of text
+          protection &mdash; simple, effective, and the foundation of
+          everything that follows.</p>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- CHAPTER 2: WORD SUBSTITUTION -->
+      <section id="substitution">
+        <div class="ch-num">CHAPTER 02</div>
+        <div class="sec-label">ShieldFont's Approach</div>
+        <div class="sec-title">Word-Level Substitution</div>
+        <div class="sec-sub">
+          What if instead of shifting letters, we replaced entire words?
+          ShieldFont maps 400 common English words to nature-themed substitutes.
+        </div>
+
+        <div class="lookup-row">
+          <input type="text" id="lookupInput" class="lookup-input" placeholder="Type a word... (the, and, write, font)">
+          <span class="lookup-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+          <span id="lookupResult" class="lookup-result">...</span>
+        </div>
+
+        <div class="maps">
+          <div class="map">
+            <span class="map-w">plumb</span>
+            <span class="map-a"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+            <span class="map-r sf">plumb</span>
+          </div>
+          <div class="map">
+            <span class="map-w">pheasant</span>
+            <span class="map-a"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+            <span class="map-r sf">pheasant</span>
+          </div>
+          <div class="map">
+            <span class="map-w">trowel</span>
+            <span class="map-a"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+            <span class="map-r sf">trowel</span>
+          </div>
+          <div class="map">
+            <span class="map-w">goshawk</span>
+            <span class="map-a"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+            <span class="map-r sf">goshawk</span>
+          </div>
+          <div class="map">
+            <span class="map-w" style="color:var(--muted);text-shadow:none;">font</span>
+            <span class="map-a"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+            <span class="map-r map-unmapped">unmapped &mdash; passes through</span>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--dim);max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
+          Only the most common English words are mapped. Proper nouns, technical
+          terms, and uncommon words pass through unchanged &mdash; making the
+          encoded text look like plausible nature writing.
+        </div>
+
+        <div class="takeaway">
+          <p>Key takeaway: AI scrapers see nature vocabulary &mdash; not your
+          content. The substitution is invisible to the trained eye but
+          devastating to machine comprehension.</p>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- CHAPTER 3: FONT MAGIC -->
+      <section id="font-magic">
+        <div class="ch-num">CHAPTER 03</div>
+        <div class="sec-label">The Missing Piece</div>
+        <div class="sec-title">The Font Is the Decoder</div>
+        <div class="sec-sub">
+          How do human readers see the original text? OpenType ligatures &mdash;
+          the same feature that turns "f"+"i" into "fi" in quality typefaces.
+          ShieldFont's ligature table says: when you see "plumb", render "the".
+        </div>
+
+        <div class="proof-grid">
+          <div class="proof-side proof-human">
+            <div class="proof-label">What Humans Read (with ShieldFont)</div>
+            <div class="proof-human-text sf" id="splitHuman"></div>
+          </div>
+          <div class="proof-side proof-ai">
+            <div class="proof-label">What AI Reads (without ShieldFont)</div>
+            <div class="proof-ai-text" id="splitAi"></div>
+          </div>
+        </div>
+        <p class="proof-note">
+          Both panels contain <strong>identical HTML</strong>. The only
+          difference is the CSS font-family.
+        </p>
+
+        <div class="takeaway">
+          <p>This is the breakthrough: the font itself is the decryption key. No
+          JavaScript required at reading time &mdash; the browser does the work.</p>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- CONVERTER -->
+      <section id="converter">
+        <div class="sec-label">Interactive Tool</div>
+        <div class="sec-title">Encode &amp; Decode</div>
+        <div class="sec-sub">
+          Type in either panel. Write your text on the left to encode it, or
+          paste encoded text on the right to decode it.
+        </div>
+
+        <div class="conv-grid">
+          <div class="conv-half conv-input-side">
+            <div class="conv-label">Your Original Text</div>
+            <textarea id="convInput" class="conv-textarea" spellcheck="false" placeholder="Type or paste your text here to encode..."></textarea>
+          </div>
+          <div class="conv-half conv-encoded-side">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="conv-label">Encoded Text</div>
+              <button class="copy-btn" id="copyEncoded">Copy</button>
+            </div>
+            <textarea id="convEncoded" class="conv-textarea" spellcheck="false" placeholder="Or paste encoded text here to decode..."></textarea>
+          </div>
+        </div>
+
+        <div class="conv-preview">
+          <div class="conv-preview-bar">
+            <span class="conv-preview-label">Reader Preview (ShieldFont applied)</span>
+          </div>
+          <div class="conv-preview-body">
+            <div class="conv-preview-text sf" id="convPreview"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- FOR TYPE FOUNDRIES -->
+      <section id="foundries">
+        <div class="sec-label">For Type Designers</div>
+        <div class="sec-title">Why This Matters for Type Design</div>
+        <div class="sec-sub">
+          ShieldFont demonstrates that fonts are not just aesthetic tools &mdash;
+          they can be functional layers of content protection.
+        </div>
+
+        <div class="pitch-grid">
+          <div class="pitch-card">
+            <div class="pitch-n">01</div>
+            <h4>Fonts as Active Protection</h4>
+            <p>OpenType ligatures have always been about rendering precision.
+            ShieldFont repurposes them for security &mdash; the font becomes
+            an encryption key that only your audience holds.</p>
+          </div>
+          <div class="pitch-card">
+            <div class="pitch-n">02</div>
+            <h4>Any Language, Any Mapping</h4>
+            <p>The word-mapping approach is language-agnostic. A Danish foundry
+            could create a Danish ShieldFont. A Japanese foundry could map kanji
+            compounds. The principle scales globally.</p>
+          </div>
+          <div class="pitch-card">
+            <div class="pitch-n">03</div>
+            <h4>New Revenue Stream</h4>
+            <p>License ShieldFont technology as a premium add-on. Publishers,
+            news organizations, and authors would pay for fonts that protect
+            their content from AI training datasets.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- INSTALL -->
+      <section id="install">
+        <div class="sec-label">Get Started</div>
+        <div class="sec-title">Add ShieldFont to Your Site</div>
+        <div class="sec-sub">
+          One line of CSS. No download required for web use.
+        </div>
+
+        <div class="code-block">
+          <div class="code-bar">
+            <div class="code-bar-dots">
+              <span class="code-dot"></span>
+              <span class="code-dot"></span>
+              <span class="code-dot"></span>
+            </div>
+            <button class="copy-btn" id="copyInstall">Copy</button>
+          </div>
+          <div class="code-body">
+            <span class="ck">&lt;link</span> <span class="cs">href=</span><span class="cp">"https://s-a.website/shieldfont/shieldfont.css"</span> <span class="cs">rel=</span><span class="cp">"stylesheet"</span><span class="ck">&gt;</span>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:32px;">
+          <a href="../shieldfont/shieldfont-serif.ttf" download class="btn btn-primary"
+            ><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg
+            >Download .ttf</a
+          >
+        </div>
+        <div style="text-align:center;margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.5px;">
+          Works in any app with OpenType ligatures: browsers, InDesign, Figma, Word.
+        </div>
+      </section>
+
+      <footer>
+        <span>ShieldFont &middot; <a href="https://s-a.website">Seneda &amp; Abrucio</a> &middot; &copy; 2026</span>
+        <span>MIT License</span>
+      </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const rm = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+        gsap.registerPlugin(ScrollTrigger);
+
+        /* Word Map */
+        const WM = {"the":"plumb","be":"onion","to":"ferret","of":"bezel","and":"pheasant","in":"ribbon","that":"gauntlet","have":"alder","it":"cinnamon","for":"jetsam","not":"cobalt","on":"gleam","with":"candle","he":"carbine","as":"inkwell","you":"nutmeg","do":"topknot","at":"vulture","this":"marsh","but":"laurel","his":"cowslip","by":"fenland","from":"swath","they":"mandolin","we":"urchin","say":"parsnip","her":"javelin","she":"fuchsia","or":"goldfinch","an":"hemp","will":"verdant","my":"welt","one":"kestrel","all":"spinet","would":"thane","there":"condor","their":"pilgrim","what":"rung","so":"earthworm","up":"dormant","out":"dogwood","if":"bulrush","about":"zinc","who":"lanyard","get":"hedgehog","which":"barb","go":"brine","me":"velvet","when":"sorbet","make":"slab","can":"truss","like":"vassal","time":"lard","no":"dolphin","just":"buckler","him":"lynx","know":"jasmine","take":"kinfolk","people":"oarlock","into":"figment","year":"notch","your":"gazelle","good":"alcove","some":"birdsong","could":"walrus","them":"shale","see":"goshawk","other":"pike","than":"bunting","then":"knob","now":"suture","look":"pigment","only":"blowfish","come":"ivory","its":"bloom","over":"nougat","think":"sunspot","also":"galleon","back":"sapphire","after":"cusp","use":"warbler","two":"panther","how":"parch","our":"acorn","work":"quorum","first":"phlox","well":"newt","way":"mink","even":"crag","new":"granite","want":"snag","because":"epsilon","any":"monsoon","these":"fennel","give":"plume","day":"grit","most":"glacier","us":"swatch","great":"rabbit","world":"orchid","life":"walnut","still":"larkspur","much":"mead","right":"ragwort","old":"ceramic","long":"ladle","very":"cask","same":"linchpin","here":"leopard","own":"awl","does":"fjord","tell":"goblin","man":"husk","many":"parrot","before":"copse","last":"redstart","thing":"frigate","been":"plum","more":"flannel","those":"sextant","such":"mulch","find":"quintet","through":"nostril","down":"foxhole","between":"garnet","did":"crimp","made":"magnet","need":"talc","never":"shoal","part":"chisel","help":"crumb","may":"bleat","ask":"rambler","too":"neptune","should":"reef","each":"creel","might":"cobbler","big":"stork","place":"cedar","end":"dormouse","show":"primrose","every":"frog","hand":"pewit","high":"barnacle","keep":"rosemary","start":"helm","kind":"tusk","small":"salmon","home":"osprey","house":"badger","point":"windbreak","again":"silk","city":"turquoise","while":"dahlia","next":"firebrand","few":"isthmus","head":"loom","stand":"cleft","word":"trove","move":"windmill","side":"logjam","turn":"bristle","open":"timpani","play":"sandpiper","fact":"hemlock","line":"prong","face":"falcon","child":"grommit","number":"napkin","seem":"plowman","form":"gulp","change":"distaff","set":"basalt","mean":"chaff","must":"trawl","try":"malt","name":"chestnut","had":"apex","came":"ember","call":"cork","run":"reed","off":"slate","let":"sawmill","night":"wren","real":"stoat","left":"obsidian","put":"goblet","close":"beehive","under":"fern","away":"artisan","three":"graphite","money":"clod","read":"juniper","water":"beaver","room":"mackerel","body":"cove","state":"tankard","food":"thistle","without":"insect","girl":"coral","against":"wisp","during":"dustpan","family":"yurt","women":"papyrus","once":"hermit","children":"pith","men":"grout","both":"balm","got":"bodkin","young":"prune","school":"saffron","book":"compass","woman":"dustbin","country":"elm","best":"capstone","ever":"hamlet","above":"pageant","enough":"parsley","often":"kernel","quite":"whimbrel","white":"clam","become":"cinch","different":"pelican","eye":"carob","bring":"octopus","father":"anthill","thought":"dale","group":"spelt","whole":"gibbet","study":"kelp","free":"lancet","late":"briar","until":"radish","large":"cricket","table":"sandstorm","leave":"damsel","since":"rafter","door":"umpire","early":"tortoise","story":"foam","letter":"kindred","however":"vellum","actually":"harvest","human":"titmouse","land":"bask","second":"coil","question":"unicorn","held":"lamprey","eat":"epaulet","moment":"moonrise","boy":"foxglove","being":"zenith","person":"anvil","system":"chalice","always":"mortar","already":"thornbill","possible":"ramekin","mother":"sandbar","music":"forge","going":"pleat","follow":"almanac","idea":"hawkweed","along":"cypress","sure":"bobcat","clear":"pigweed","power":"turban","rather":"mandrel","business":"rampart","case":"pewter","problem":"burr","course":"glyph","plan":"saltbox","half":"talon","car":"sandbank","program":"millet","together":"spur","another":"fawn","reason":"impulse","market":"olive","company":"mongoose","social":"cactus","meet":"firebird","hold":"cresset","today":"sparrow","public":"cauliflower","order":"tarn","wrong":"cairn","level":"oyster","area":"dross","street":"flume","love":"driftnet","color":"clove","interest":"barley","rate":"utensil","care":"ottoman","matter":"thyme","four":"origami","million":"biscuit","action":"flute","game":"gravel","class":"sage","feel":"turf","less":"quarry","nothing":"redshank","ago":"beryl","whether":"opal","hard":"starling","report":"opus","happen":"gazer","sell":"plover","lead":"trumpet","local":"bugler","continue":"pulp","air":"perch","pass":"drapery","sit":"smelt","important":"frond","hear":"sprig","office":"plinth","remain":"quartzite","drive":"yearling","pay":"gourd","build":"canopy","fall":"pavilion","develop":"bromine","national":"midge","art":"xenolith","offer":"charcoal","age":"bolt","information":"joust","force":"millstone","month":"sapling","church":"mustard","true":"damask","nature":"whippet","present":"eclipse","base":"bonnet","political":"cornmill","break":"pyre","college":"corsair","receive":"wombat","paper":"morsel","service":"lattice","provide":"dune","contain":"jade","product":"flux","carry":"catfish","final":"pinecone","cover":"shawl","press":"nightjar","begin":"terrazzo","behind":"basil","war":"muslin","simple":"cobweb","believe":"crane","death":"pearl","live":"vale","write":"trowel","lose":"zephyr","around":"fickle","why":"arc","went":"silt","perhaps":"amethyst","far":"ban","given":"optic","able":"tuft","talk":"keel","watch":"brawl","walk":"dowel","seen":"moose","within":"flange","result":"flinch","mind":"fiord","least":"grimy","yet":"bet","general":"cardamom","speak":"guise","near":"gully","type":"heist","job":"bin","field":"hitch","sense":"ingot","view":"julep","cost":"knack","knew":"lance","lost":"lemur","past":"locus","five":"lynch","stay":"manor","done":"maple","gone":"melon","wish":"mirth","stop":"natal","step":"pansy","took":"plaid","full":"quail","week":"rinse","note":"rowdy","rest":"salve","sign":"scalp"};
+
+        const RM = {};
+        for (const [k, v] of Object.entries(WM)) RM[v] = k;
+
+        function matchCase(s, t) {
+          if (s === s.toUpperCase() && s.length > 1) return t.toUpperCase();
+          if (s[0] === s[0].toUpperCase()) return t[0].toUpperCase() + t.slice(1);
+          return t;
+        }
+        function encode(t) {
+          return t.replace(/\b[a-zA-Z]+\b/g, w => {
+            const k = w.toLowerCase();
+            return WM[k] ? matchCase(w, WM[k]) : w;
+          });
+        }
+        function decode(t) {
+          return t.replace(/\b[a-zA-Z]+\b/g, w => {
+            const k = w.toLowerCase();
+            return RM[k] ? matchCase(w, RM[k]) : w;
+          });
+        }
+
+        /* === CAESAR CIPHER === */
+        function caesarCipher(text, shift) {
+          return text.split("").map(c => {
+            if (c >= "a" && c <= "z") return String.fromCharCode(((c.charCodeAt(0) - 97 + shift) % 26) + 97);
+            if (c >= "A" && c <= "Z") return String.fromCharCode(((c.charCodeAt(0) - 65 + shift) % 26) + 65);
+            return c;
+          }).join("");
+        }
+
+        const caesarInput = document.getElementById("caesarInput");
+        const caesarOutput = document.getElementById("caesarOutput");
+        const shiftSlider = document.getElementById("shiftSlider");
+        const shiftVal = document.getElementById("shiftVal");
+        const letterGrid = document.getElementById("letterGrid");
+
+        function updateCaesar() {
+          const shift = parseInt(shiftSlider.value);
+          shiftVal.textContent = shift;
+          caesarOutput.textContent = caesarCipher(caesarInput.value, shift);
+          let html = "";
+          for (let i = 0; i < 26; i++) {
+            const from = String.fromCharCode(65 + i);
+            const to = String.fromCharCode(65 + ((i + shift) % 26));
+            html += '<span class="lp"><span class="lp-from">' + from + '</span><span class="lp-arrow">&#8595;</span><span class="lp-to">' + to + "</span></span>";
+          }
+          letterGrid.innerHTML = html;
+        }
+        caesarInput.addEventListener("input", updateCaesar);
+        shiftSlider.addEventListener("input", updateCaesar);
+        updateCaesar();
+
+        /* === WORD LOOKUP === */
+        const lookupInput = document.getElementById("lookupInput");
+        const lookupResult = document.getElementById("lookupResult");
+        lookupInput.addEventListener("input", () => {
+          const w = lookupInput.value.trim().toLowerCase();
+          if (!w) { lookupResult.textContent = "..."; lookupResult.className = "lookup-result"; return; }
+          if (WM[w]) {
+            lookupResult.textContent = WM[w];
+            lookupResult.className = "lookup-result";
+          } else {
+            lookupResult.textContent = "(unmapped)";
+            lookupResult.className = "lookup-result unmapped";
+          }
+        });
+
+        /* === SPLIT SCREEN === */
+        const demoText = "The future of writing belongs to those who protect their words. Every sentence you publish feeds a machine that never asked permission.";
+        const encoded = encode(demoText);
+        document.getElementById("splitHuman").textContent = encoded;
+        document.getElementById("splitAi").textContent = encoded;
+
+        /* === BIDIRECTIONAL CONVERTER === */
+        const convInput = document.getElementById("convInput");
+        const convEncoded = document.getElementById("convEncoded");
+        const convPreview = document.getElementById("convPreview");
+        let syncing = false;
+
+        const defaultText = "The art of writing is worth protecting. Every word you publish can be scraped by AI systems and used without your knowledge. ShieldFont gives you a simple, elegant defense.";
+        convInput.value = defaultText;
+        const defaultEncoded = encode(defaultText);
+        convEncoded.value = defaultEncoded;
+        convPreview.textContent = defaultEncoded;
+
+        convInput.addEventListener("input", () => {
+          if (syncing) return;
+          syncing = true;
+          const enc = encode(convInput.value);
+          convEncoded.value = enc;
+          convPreview.textContent = enc;
+          syncing = false;
+        });
+        convEncoded.addEventListener("input", () => {
+          if (syncing) return;
+          syncing = true;
+          const dec = decode(convEncoded.value);
+          convInput.value = dec;
+          convPreview.textContent = convEncoded.value;
+          syncing = false;
+        });
+
+        /* === COPY BUTTONS === */
+        function doCopy(btn, text) {
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = "Copied!";
+            btn.classList.add("copied");
+            setTimeout(() => { btn.textContent = orig; btn.classList.remove("copied"); }, 2000);
+          });
+        }
+        document.getElementById("copyEncoded").addEventListener("click", function() {
+          doCopy(this, convEncoded.value);
+        });
+        document.getElementById("copyInstall").addEventListener("click", function() {
+          doCopy(this, '<link href="https://s-a.website/shieldfont/shieldfont.css" rel="stylesheet">');
+        });
+
+        /* === SMOOTH SCROLL === */
+        document.querySelectorAll('a[href^="#"]').forEach(a =>
+          a.addEventListener("click", e => {
+            e.preventDefault();
+            const t = document.querySelector(a.getAttribute("href"));
+            if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+          })
+        );
+
+        /* === GSAP REVEALS === */
+        if (!rm) {
+          const els = document.querySelectorAll("section,.proof-grid,.conv-grid,.code-block,.pitch-grid,.maps,.caesar-box,.conv-preview");
+          els.forEach(el => {
+            gsap.set(el, { opacity: 0, y: 20 });
+            gsap.to(el, {
+              opacity: 1, y: 0, duration: 0.5, ease: "power3.out",
+              scrollTrigger: { trigger: el, start: "top 88%", once: true }
+            });
+          });
+          gsap.set(".pitch-card", { opacity: 0, y: 14 });
+          ScrollTrigger.create({
+            trigger: ".pitch-grid",
+            start: "top 82%",
+            once: true,
+            onEnter: () => gsap.to(".pitch-card", {
+              opacity: 1, y: 0, stagger: 0.08, duration: 0.4, ease: "power3.out"
+            })
+          });
+          gsap.set(".map", { opacity: 0, y: 10 });
+          ScrollTrigger.create({
+            trigger: ".maps",
+            start: "top 85%",
+            once: true,
+            onEnter: () => gsap.to(".map", {
+              opacity: 1, y: 0, stagger: 0.06, duration: 0.35, ease: "power3.out"
+            })
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
