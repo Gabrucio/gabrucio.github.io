@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OOO Ads — Sunwing x WestJet Rewards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Syne:wght@700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #C0C0C0;
+  color: #000;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ============================================
+   WINDOWS 95 CORE PATTERNS
+   ============================================ */
+.win-raised {
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  background: #C0C0C0;
+}
+.win-sunken {
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: #fff;
+}
+.win-title-bar {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: white;
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.win-close-btn {
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: Tahoma, sans-serif;
+  font-size: 10px;
+  width: 16px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  color: #000;
+}
+.win-close-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+
+/* ============================================
+   PIXEL GRID DESKTOP BACKGROUND
+   ============================================ */
+.desktop-bg {
+  background-color: #008080;
+  background-image: linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+.font-headline { font-family: 'Instrument Serif', Georgia, serif; }
+.font-system { font-family: Tahoma, 'Segoe UI', sans-serif; }
+.font-body { font-family: 'Inter', sans-serif; }
+.font-mono { font-family: 'Spline Sans Mono', 'Courier New', monospace; }
+
+/* ============================================
+   SPA SCREEN SYSTEM
+   ============================================ */
+.screen {
+  display: none;
+  min-height: 100vh;
+}
+.screen.active {
+  display: block;
+}
+
+/* ============================================
+   TASKBAR
+   ============================================ */
+.taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 36px;
+  background: #C0C0C0;
+  border-top: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  gap: 4px;
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+}
+.taskbar-start {
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+}
+.taskbar-start:active {
+  border-color: #808080 #fff #fff #808080;
+}
+.taskbar-start svg { width: 16px; height: 16px; }
+.taskbar-divider {
+  width: 2px;
+  height: 24px;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #fff;
+  margin: 0 2px;
+}
+.taskbar-btn {
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  padding: 2px 12px;
+  height: 28px;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.taskbar-btn.active-btn {
+  border-color: #808080 #fff #fff #808080;
+  background: #B0B0B0;
+}
+.taskbar-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+.taskbar-clock {
+  margin-left: auto;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: Tahoma, sans-serif;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+/* ============================================
+   SCREEN 1 — HOME
+   ============================================ */
+.home-screen {
+  padding: 24px;
+  padding-bottom: 56px;
+}
+
+/* Hero Window */
+.hero-window {
+  max-width: 720px;
+  margin: 0 auto 40px auto;
+}
+.hero-window .win-title-bar span { display: flex; align-items: center; gap: 6px; }
+.hero-body {
+  padding: 32px;
+  text-align: center;
+}
+.hero-headline {
+  font-size: 40px;
+  line-height: 1.15;
+  color: #000;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+.hero-subline {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 28px;
+  line-height: 1.5;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-cta {
+  display: inline-block;
+  background: #F26522;
+  color: #fff;
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 10px 28px;
+  border: 2px solid;
+  border-color: #ff8844 #aa4400 #aa4400 #ff8844;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.hero-cta:hover { background: #e05a1a; }
+.hero-cta:active {
+  border-color: #aa4400 #ff8844 #ff8844 #aa4400;
+}
+
+/* Point Equation */
+.equation-section {
+  max-width: 720px;
+  margin: 0 auto 40px auto;
+}
+.equation-section .win-title-bar span { display: flex; align-items: center; gap: 6px; }
+.equation-body {
+  padding: 36px 24px;
+}
+.equation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+}
+.equation-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.eq-icon-box {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  background: #C0C0C0;
+}
+.eq-icon-box svg {
+  width: 36px;
+  height: 36px;
+  stroke: #000;
+}
+.eq-equals {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.eq-equals svg {
+  width: 24px;
+  height: 24px;
+  stroke: #fff;
+  stroke-width: 3;
+}
+.eq-points-badge {
+  background: #F26522;
+  color: #fff;
+  font-family: 'Spline Sans Mono', monospace;
+  font-weight: 700;
+  font-size: 20px;
+  padding: 14px 24px;
+  border: 2px solid;
+  border-color: #ff8844 #aa4400 #aa4400 #ff8844;
+  text-align: center;
+  line-height: 1.2;
+}
+.eq-points-badge small {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+.eq-label {
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  color: #666;
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* How It Works */
+.steps-section {
+  max-width: 720px;
+  margin: 0 auto 40px auto;
+}
+.steps-section .win-title-bar span { display: flex; align-items: center; gap: 6px; }
+.steps-body {
+  padding: 32px 24px;
+}
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.step-card {
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: #fff;
+  padding: 20px 16px;
+  text-align: center;
+}
+.step-number {
+  font-family: 'Spline Sans Mono', monospace;
+  font-weight: 700;
+  font-size: 28px;
+  color: #808080;
+  margin-bottom: 8px;
+}
+.step-title {
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+  font-size: 13px;
+  color: #000;
+  margin-bottom: 8px;
+}
+.step-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #555;
+  line-height: 1.5;
+}
+.step-icon {
+  margin-bottom: 12px;
+}
+.step-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: #808080;
+}
+
+/* Bottom CTA row on home */
+.home-bottom-cta {
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* ============================================
+   SCREEN 3 — EDITOR
+   ============================================ */
+.editor-screen {
+  padding: 24px;
+  padding-bottom: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 44px);
+}
+
+.email-window {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+.email-window .win-title-bar {
+  padding: 3px 6px;
+}
+.email-window .win-title-bar .title-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.email-window .win-title-bar .title-text svg {
+  width: 14px;
+  height: 14px;
+  fill: #fff;
+  stroke: none;
+}
+.email-body {
+  padding: 0;
+}
+
+/* Email field rows */
+.email-field {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #C0C0C0;
+  font-family: Tahoma, sans-serif;
+  font-size: 12px;
+}
+.email-field-label {
+  padding: 6px 10px;
+  color: #333;
+  font-weight: bold;
+  width: 72px;
+  flex-shrink: 0;
+  background: #E8E8E8;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #C0C0C0;
+}
+.email-field-value {
+  flex: 1;
+  padding: 6px 10px;
+  font-family: Tahoma, sans-serif;
+  font-size: 12px;
+  border: none;
+  outline: none;
+  background: #FFFDE0;
+  color: #000;
+}
+.email-field-value:focus {
+  background: #FFF9B0;
+}
+.email-field-value::placeholder {
+  color: #999;
+}
+
+/* Tone toggle */
+.tone-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #C0C0C0;
+  padding: 6px 10px;
+  background: #E8E8E8;
+  gap: 8px;
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+}
+.tone-label {
+  color: #333;
+  font-weight: bold;
+  margin-right: 4px;
+}
+.tone-btn {
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  padding: 3px 12px;
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  color: #000;
+}
+.tone-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+.tone-btn.selected {
+  border-color: #808080 #fff #fff #808080;
+  background: #A0A0A0;
+  font-weight: bold;
+}
+
+/* Message body */
+.email-message-area {
+  padding: 12px;
+  min-height: 200px;
+  font-family: Tahoma, sans-serif;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #000;
+  background: #FFFDE0;
+  border: none;
+  outline: none;
+  width: 100%;
+  resize: vertical;
+}
+.email-message-area:focus {
+  background: #FFF9B0;
+}
+
+/* Affiliate link highlight */
+.affiliate-link {
+  color: #F26522;
+  text-decoration: underline;
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Copy button — OUTSIDE window */
+.copy-section {
+  max-width: 640px;
+  width: 100%;
+  margin: 20px auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.copy-btn {
+  background: #F26522;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(242, 101, 34, 0.3);
+}
+.copy-btn:hover {
+  background: #e05a1a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(242, 101, 34, 0.35);
+}
+.copy-btn:active {
+  transform: translateY(0);
+}
+.copy-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.copy-btn.copied {
+  background: #2d8a4e;
+  box-shadow: 0 2px 8px rgba(45, 138, 78, 0.3);
+}
+.copy-hint {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Editor nav row */
+.editor-nav {
+  max-width: 640px;
+  width: 100%;
+  margin: 16px auto 20px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.back-btn {
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  padding: 4px 14px;
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.back-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+.dash-link {
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  padding: 4px 14px;
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dash-link:active {
+  border-color: #808080 #fff #fff #808080;
+}
+
+/* ============================================
+   SCREEN 4 — DASHBOARD
+   ============================================ */
+.dash-screen {
+  padding: 10px;
+  padding-bottom: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 44px);
+}
+.dash-back-row {
+  max-width: 800px;
+  margin: 0 auto 6px auto;
+}
+.dash-window {
+  max-width: 800px;
+  margin: 0 auto 10px auto;
+}
+.dash-window .win-title-bar span { display: flex; align-items: center; gap: 6px; }
+
+/* Header inside dashboard */
+.dash-header {
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid #C0C0C0;
+}
+.dash-headline {
+  font-size: 18px;
+  color: #000;
+  margin-bottom: 2px;
+}
+.dash-sub {
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  color: #555;
+}
+
+/* Points hero */
+.points-hero {
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid #C0C0C0;
+}
+.points-label {
+  font-family: Tahoma, sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #666;
+  margin-bottom: 2px;
+}
+.points-number {
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: #F26522;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.points-unit {
+  font-family: Tahoma, sans-serif;
+  font-size: 10px;
+  color: #666;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  border-bottom: 1px solid #C0C0C0;
+}
+.stat-cell {
+  padding: 6px 12px;
+  text-align: center;
+  border-right: 1px solid #C0C0C0;
+  flex: 1;
+}
+.stat-cell:last-child { border-right: none; }
+.stat-value {
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.stat-label {
+  font-family: Tahoma, sans-serif;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #808080;
+}
+
+/* Destinations / Activity sections */
+.dest-section {
+  padding: 8px 12px;
+  border-bottom: 1px solid #C0C0C0;
+}
+.dest-title {
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  color: #000;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dotted #C0C0C0;
+  font-family: Tahoma, sans-serif;
+  font-size: 12px;
+}
+.dest-row:last-child { border-bottom: none; }
+.dest-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dest-flag { font-size: 16px; }
+.dest-count {
+  font-family: 'Spline Sans Mono', monospace;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Dashboard CTA */
+.dash-cta-row {
+  padding: 10px;
+  text-align: center;
+}
+.book-flight-btn {
+  display: inline-block;
+  background: #F26522;
+  color: #fff;
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 8px 28px;
+  border: 2px solid;
+  border-color: #ff8844 #aa4400 #aa4400 #ff8844;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.book-flight-btn:hover { background: #e05a1a; }
+.book-flight-btn:active {
+  border-color: #aa4400 #ff8844 #ff8844 #aa4400;
+}
+
+/* Activity log in dash */
+.activity-section {
+  max-width: 800px;
+  margin: 0 auto 10px auto;
+}
+.activity-body {
+  padding: 16px;
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 11px;
+  color: #333;
+  background: #000;
+  line-height: 1.8;
+}
+.log-line {
+  color: #00ff00;
+}
+.log-line .log-time {
+  color: #808080;
+}
+.log-line .log-event {
+  color: #00ff00;
+}
+.log-line .log-pts {
+  color: #F26522;
+}
+
+/* ============================================
+   SCREEN 2 — LOGIN
+   ============================================ */
+.login-screen {
+  padding: 24px;
+  padding-bottom: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.login-window {
+  max-width: 380px;
+  width: 100%;
+}
+.login-body {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.login-input {
+  font-family: Tahoma, sans-serif;
+  font-size: 12px;
+  padding: 8px 10px;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  background: #fff;
+  color: #000;
+  outline: none;
+  width: 100%;
+}
+.login-input:focus {
+  background: #FFFFF0;
+}
+.login-btn {
+  font-family: Tahoma, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 8px 16px;
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+.login-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: Tahoma, sans-serif;
+  font-size: 10px;
+  color: #808080;
+  margin: 4px 0;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #C0C0C0;
+}
+.login-social-btn {
+  font-family: Tahoma, sans-serif;
+  font-size: 11px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.login-social-btn:active {
+  border-color: #808080 #fff #fff #808080;
+}
+.login-social-btn.fb {
+  background: #E8E8E8;
+  color: #666;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .home-screen,
+  .login-screen,
+  .editor-screen,
+  .dash-screen {
+    padding: 8px;
+    padding-bottom: 48px;
+  }
+  .hero-window,
+  .equation-section,
+  .steps-section,
+  .login-window,
+  .email-window,
+  .copy-section,
+  .editor-nav,
+  .dash-window,
+  .activity-section,
+  .dash-back-row {
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .hero-headline {
+    font-size: 28px;
+  }
+  .hero-body {
+    padding: 20px 16px;
+  }
+  .steps-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .equation-row {
+    gap: 12px;
+  }
+  .eq-icon-box {
+    width: 56px;
+    height: 56px;
+  }
+  .eq-points-badge {
+    font-size: 16px;
+    padding: 10px 16px;
+  }
+  .stats-grid {
+    flex-direction: row;
+  }
+  .stat-cell {
+    border-right: 1px solid #C0C0C0;
+    border-bottom: none;
+    padding: 4px 8px;
+  }
+  .stat-cell:last-child { border-right: none; }
+  .points-number {
+    font-size: 20px;
+  }
+  .email-field-label {
+    width: 60px;
+    font-size: 11px;
+    padding: 6px 6px;
+  }
+  .taskbar {
+    height: 32px;
+  }
+  .taskbar-start { font-size: 10px; padding: 2px 6px; height: 24px; }
+  .taskbar-btn { font-size: 10px; padding: 2px 8px; height: 24px; }
+  .taskbar-clock { font-size: 10px; height: 24px; }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: "_";
+  animation: blink 1s step-end infinite;
+}
+</style>
+</head>
+<body class="desktop-bg">
+
+<!-- ============================================
+     TASKBAR
+     ============================================ -->
+<div class="taskbar">
+  <button class="taskbar-start" onclick="goTo('home')">
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="6" height="6" fill="#F26522"/>
+      <rect x="9" y="1" width="6" height="6" fill="#808080"/>
+      <rect x="1" y="9" width="6" height="6" fill="#808080"/>
+      <rect x="9" y="9" width="6" height="6" fill="#333"/>
+    </svg>
+    Start
+  </button>
+  <div class="taskbar-divider"></div>
+  <button class="taskbar-btn" id="tb-home" onclick="goTo('home')">Home</button>
+  <button class="taskbar-btn" id="tb-login" onclick="goTo('login')">Login</button>
+  <button class="taskbar-btn" id="tb-editor" onclick="goTo('editor')">Editor</button>
+  <button class="taskbar-btn" id="tb-dashboard" onclick="goTo('dashboard')">Dashboard</button>
+  <div class="taskbar-clock" id="taskbar-clock"></div>
+</div>
+
+<!-- ============================================
+     SCREEN 1 — HOME
+     ============================================ -->
+<div class="screen active" id="screen-home">
+  <div class="home-screen">
+
+    <!-- Sunwing Logo + OOO ADS -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px 0 32px;">
+      <svg viewBox="0 0 546.59 139.88" style="height: 16px; opacity: 0.5;"><g><path fill="#fff" d="M5.53,86.66c4.42,2.21,12.8,5.37,20.22,5.37c6.32,0,9.63-3.16,9.63-6.95c0-3.79-2.53-6.48-9.63-9.95 C16.9,70.71,9.48,64.23,9.48,54.6c0-16.11,14.06-26.69,33.96-26.69c9,0,16.11,1.9,19.74,3.95l-5.37,16.11 c-3.16-1.42-8.69-3.32-15.48-3.32c-6,0-9.95,2.53-9.95,6.79c0,3.16,3.16,5.84,9.32,8.69c8.53,4.26,17.37,10.58,17.37,21.32 c0,17.69-15.01,27.32-35.54,27.17c-9.63-0.16-18.95-2.69-23.53-6L5.53,86.66z"/><path fill="#fff" d="M147.51,29.64l-9.79,52.12c-1.89,9.79-3.16,18.16-4.27,25.11h-20.05l1.42-12.48l-0.32-0.16 c-7.9,10.11-17.21,14.37-26.53,14.37c-12.48,0-19.9-6.95-19.9-21.64c0-4.1,0.47-8.84,1.58-14.21l8.22-43.11h22.74l-7.89,41.38 c-0.63,3.47-1.1,7.42-1.1,10.27c0,4.9,2.05,8.84,7.74,8.84c7.74,0,15.8-9.32,18.64-24.64l6.79-35.85H147.51z"/><path fill="#fff" d="M147.35,106.87l9.79-52.12c1.9-9.79,3.16-18.16,4.11-25.11h20.06l-1.42,12.79h0.32 c7.27-9.94,16.9-14.53,27-14.53c12.63,0,19.9,7.74,19.9,21.16c0,3.48-0.63,9.17-1.26,12.95l-8.53,44.85h-22.74l8.06-42.8 c0.47-2.69,0.79-5.68,0.79-8.53c0-5.53-1.9-9.32-7.74-9.32c-7.42,0-15.95,9.32-19.27,26.37l-6.32,34.27H147.35z"/><path fill="#fff" d="M260.42,29.64l0.16,32.85c0.16,8.69-0.16,15.95-0.63,24.47h0.32c2.69-8.21,6.16-15.95,9.32-23.69l15.32-33.64 h18.48l1.9,32.54c0.48,9.16,0.79,16.58,0.32,24.79h0.47c2.53-8.53,5.21-16.11,8.36-25.11l13.27-32.22h22.9l-37.59,77.23H291.7 l-2.21-26.85c-0.63-8.05-0.63-15.47-0.63-24.63h-0.48c-4.1,10.89-5.84,16.58-9.15,23.53l-13.11,27.95h-21.32l-7.27-77.23H260.42z"/><polygon fill="#fff" points="342.55,106.87 357.24,29.64 379.82,29.64 365.29,106.87"/><path fill="#fff" d="M379.66,106.87l9.79-52.12c1.89-9.79,3.16-18.16,4.1-25.11h20.05l-1.42,12.79h0.32 c7.27-9.94,16.9-14.53,27.01-14.53c12.64,0,19.9,7.74,19.9,21.16c0,3.48-0.63,9.17-1.26,12.95l-8.53,44.85h-22.74l8.05-42.8 c0.48-2.69,0.79-5.69,0.79-8.53c0-5.53-1.9-9.32-7.74-9.32c-7.42,0-15.95,9.32-19.26,26.37l-6.32,34.27H379.66z"/><path fill="#fff" d="M468.89,117.61c4.26,2.52,13.58,4.27,20.22,4.27c11.37,0,19.74-5.05,23.06-20.53l1.26-6.63h-0.32 c-6,7.9-12.95,11.53-22.11,11.53c-15.32,0-24.64-12.48-24.8-27.64c-0.16-25.42,18.17-50.7,51.81-50.7c10.9,0,20.37,2.06,28.58,5.37 l-11.68,63.65c-2.69,14.21-7.11,26.85-16.27,34.27c-8.37,6.64-19.59,8.69-29.85,8.69c-10.43,0-19.9-1.89-25.27-4.89L468.89,117.61z M521.96,46.7c-1.74-0.79-5.06-1.42-8.22-1.42c-13.74,0-23.53,15.32-23.53,29.85c0,7.89,3.47,13.58,10.42,13.58 c7.42,0,14.85-8.37,17.38-21.32L521.96,46.7z"/><path fill="#fff" d="M383.43,11.12c0,6.73-5.46,10.74-12.19,10.74c-6.73,0-12.19-4.01-12.19-10.74S364.5,0,371.24,0 C377.97,0,383.43,4.39,383.43,11.12z"/></g></svg>
+      <div style="display: flex; align-items: baseline; justify-content: center; gap: 8px;">
+        <span style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.6rem; color: white; letter-spacing: -0.15em; line-height: 1;">OOO</span>
+        <span style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 2.4rem; color: rgba(255,255,255,0.6); line-height: 1;">Ads</span>
+      </div>
+    </div>
+
+    <!-- Hero Window -->
+    <div class="hero-window win-raised fade-in">
+      <div class="win-title-bar">
+        <span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m22 5-10 7L2 5"/></svg>
+          welcome.exe
+        </span>
+        <button class="win-close-btn" title="Close">&times;</button>
+      </div>
+      <div class="hero-body">
+        <h1 class="hero-headline font-headline">Your boring auto-reply<br>is about to make you money.</h1>
+        <p class="hero-subline font-body">Turn your OOO into a Sunwing ad and earn WestJet points every time someone books a trip through it.</p>
+        <button class="hero-cta" onclick="goTo('login')">Build Your OOO &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Point Equation Section -->
+    <div class="equation-section win-raised fade-in">
+      <div class="win-title-bar">
+        <span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20m-7-7 7 7 7-7"/></svg>
+          how_it_pays.exe
+        </span>
+        <button class="win-close-btn">&times;</button>
+      </div>
+      <div class="equation-body">
+        <div class="equation-grid">
+
+          <!-- Row 1: 1 Click = 1 Point -->
+          <div>
+            <div class="equation-row">
+              <div>
+                <div class="eq-icon-box">
+                  <!-- Mouse pointer click icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 2l-1 13 4-4 5 6 3-2-5-6h6L9 2z" fill="#333" stroke="#000"/>
+                  </svg>
+                </div>
+                <div class="eq-label">1 link click</div>
+              </div>
+
+              <div class="eq-equals">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                  <line x1="5" y1="9" x2="19" y2="9"/>
+                  <line x1="5" y1="15" x2="19" y2="15"/>
+                </svg>
+              </div>
+
+              <div>
+                <div class="eq-points-badge">
+                  1
+                  <small>WestJet Point</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: 1 Booking = 1,000 Points -->
+          <div>
+            <div class="equation-row">
+              <div>
+                <div class="eq-icon-box">
+                  <!-- Plane icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+                  </svg>
+                </div>
+                <div class="eq-label">1 booking made</div>
+              </div>
+
+              <div class="eq-equals">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                  <line x1="5" y1="9" x2="19" y2="9"/>
+                  <line x1="5" y1="15" x2="19" y2="15"/>
+                </svg>
+              </div>
+
+              <div>
+                <div class="eq-points-badge">
+                  1,000
+                  <small>WestJet Points</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works Steps -->
+    <div class="steps-section win-raised fade-in">
+      <div class="win-title-bar">
+        <span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          readme.txt
+        </span>
+        <button class="win-close-btn">&times;</button>
+      </div>
+      <div class="steps-body">
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <div class="step-number font-mono">01</div>
+            <div class="step-title">Become a Travel Agent</div>
+            <div class="step-desc">We generate your custom OOO message with a Sunwing deal and a tracked link connected to your account.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div class="step-number font-mono">02</div>
+            <div class="step-title">Watch It Work</div>
+            <div class="step-desc">Instead of just making people jealous, your auto-reply helps them book their next trip: colleagues, clients, even that LinkedIn guy who keeps pinging you.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="step-number font-mono">03</div>
+            <div class="step-title">Cash In</div>
+            <div class="step-desc">WestJet points pile up while you're away. Come back to more travel. Redeem them for flights, upgrades, or your next trip.</div>
+          </div>
+        </div>
+        <div class="home-bottom-cta" style="margin-top: 24px;">
+          <button class="hero-cta" onclick="goTo('login')">Create Your OOO &rarr;</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================
+     SCREEN 2 — LOGIN
+     ============================================ -->
+<div class="screen" id="screen-login">
+  <div class="login-screen">
+    <div class="login-window win-raised fade-in">
+      <div class="win-title-bar">
+        <span>Log In &mdash; OOO Ads</span>
+        <button class="win-close-btn" onclick="goTo('home')">&times;</button>
+      </div>
+      <div class="login-body">
+        <input class="login-input" type="email" value="sarah.chen@email.com">
+        <input class="login-input" type="password" value="12345678">
+        <button class="login-btn" onclick="goTo('editor')">Log In</button>
+        <div class="login-divider">&mdash; or &mdash;</div>
+        <button class="login-social-btn" onclick="goTo('editor')">
+          <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <button class="login-social-btn fb" onclick="goTo('editor')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#999"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          Continue with Facebook
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     SCREEN 3 — EDITOR (was Screen 2)
+     ============================================ -->
+<div class="screen" id="screen-editor">
+  <div class="editor-screen">
+
+    <div class="editor-nav">
+      <button class="back-btn" onclick="goTo('login')">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+      <button class="dash-link" onclick="goTo('dashboard')">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+    </div>
+
+    <!-- Email Window -->
+    <div class="email-window win-raised fade-in">
+      <div class="win-title-bar">
+        <span class="title-text">
+          <svg viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="10" rx="1" fill="#fff"/><path d="M1 3l6 4 6-4" stroke="#000080" stroke-width="1" fill="none"/></svg>
+          Out of Office &mdash; Email Client
+        </span>
+        <button class="win-close-btn">&times;</button>
+      </div>
+      <div class="email-body">
+        <div class="email-field">
+          <div class="email-field-label">From:</div>
+          <input class="email-field-value" type="text" id="field-name" placeholder="Your name" value="Alex Thompson" oninput="updateMessage()">
+        </div>
+        <div class="email-field">
+          <div class="email-field-label">Subject:</div>
+          <input class="email-field-value" type="text" id="field-subject" readonly style="color: #555; cursor: default;">
+        </div>
+        <div class="email-field">
+          <div class="email-field-label">Return:</div>
+          <input class="email-field-value" type="date" id="field-return" oninput="updateMessage()">
+        </div>
+        <div class="tone-row">
+          <span class="tone-label">Tone:</span>
+          <button class="tone-btn selected" id="tone-professional" onclick="setTone('professional')">Professional</button>
+          <button class="tone-btn" id="tone-unhinged" onclick="setTone('unhinged')">Unhinged</button>
+        </div>
+        <textarea class="email-message-area" id="message-body" rows="12" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <!-- Buttons — Outside the window frame -->
+    <div class="copy-section" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <button class="copy-btn" id="copy-btn" onclick="copyMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span id="copy-btn-text">Copy Your OOO Message</span>
+      </button>
+      <button class="copy-btn" onclick="goTo('dashboard')" style="background: #004B87;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>Go to Dashboard</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================
+     SCREEN 4 — DASHBOARD
+     ============================================ -->
+<div class="screen" id="screen-dashboard">
+  <div class="dash-screen">
+
+    <div class="dash-back-row">
+      <button class="back-btn" onclick="goTo('editor')">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Editor
+      </button>
+    </div>
+
+    <!-- Main Dashboard Window -->
+    <div class="dash-window win-raised fade-in">
+      <div class="win-title-bar">
+        <span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          ooo_dashboard.exe &mdash; Command Center
+        </span>
+        <button class="win-close-btn" onclick="goTo('editor')">&times;</button>
+      </div>
+
+      <div class="dash-header">
+        <h2 class="dash-headline font-headline">Your OOO Is Working Overtime</h2>
+        <p class="dash-sub">While you were gone, your inbox was busy earning.</p>
+      </div>
+
+      <div class="points-hero">
+        <div class="points-label">WestJet Rewards Balance</div>
+        <div class="points-number font-mono" id="dash-points">4,720</div>
+        <div class="points-unit">points earned from your out-of-office</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <div class="stat-value font-mono" id="dash-clicks">342</div>
+          <div class="stat-label">Clicks This Month</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value font-mono" id="dash-bookings">7</div>
+          <div class="stat-label">Bookings Made</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value font-mono" id="dash-days">12</div>
+          <div class="stat-label">Days OOO Active</div>
+        </div>
+      </div>
+
+      <!-- Activity as spreadsheet-style table -->
+      <div class="dest-section" style="padding: 8px 12px;">
+        <div class="dest-title" style="margin-bottom: 4px; font-size: 11px;">Recent Activity</div>
+        <table style="width: 100%; border-collapse: collapse; font-family: Tahoma, sans-serif; font-size: 11px;">
+          <tr style="background: #D4D0C8;">
+            <td style="padding: 3px 6px; border: 1px solid #808080; font-weight: bold;">Date</td>
+            <td style="padding: 3px 6px; border: 1px solid #808080; font-weight: bold;">Event</td>
+            <td style="padding: 3px 6px; border: 1px solid #808080; font-weight: bold; text-align: right;">Points</td>
+          </tr>
+          <tr><td style="padding: 3px 6px; border: 1px solid #ccc;">Apr 14</td><td style="padding: 3px 6px; border: 1px solid #ccc;">Link clicked</td><td style="padding: 3px 6px; border: 1px solid #ccc; text-align: right;">+1</td></tr>
+          <tr style="background: #f5f5f0;"><td style="padding: 3px 6px; border: 1px solid #ccc;">Apr 13</td><td style="padding: 3px 6px; border: 1px solid #ccc;">Booking: Cancun</td><td style="padding: 3px 6px; border: 1px solid #ccc; text-align: right; color: #F26522; font-weight: bold;">+1,000</td></tr>
+          <tr><td style="padding: 3px 6px; border: 1px solid #ccc;">Apr 12</td><td style="padding: 3px 6px; border: 1px solid #ccc;">3 links clicked</td><td style="padding: 3px 6px; border: 1px solid #ccc; text-align: right;">+3</td></tr>
+          <tr style="background: #f5f5f0;"><td style="padding: 3px 6px; border: 1px solid #ccc;">Apr 10</td><td style="padding: 3px 6px; border: 1px solid #ccc;">Booking: Varadero</td><td style="padding: 3px 6px; border: 1px solid #ccc; text-align: right; color: #F26522; font-weight: bold;">+1,000</td></tr>
+          <tr><td style="padding: 3px 6px; border: 1px solid #ccc;">Apr 9</td><td style="padding: 3px 6px; border: 1px solid #ccc;">5 links clicked</td><td style="padding: 3px 6px; border: 1px solid #ccc; text-align: right;">+5</td></tr>
+        </table>
+      </div>
+
+      <div class="dash-cta-row" style="margin-top: 6px;">
+        <button class="book-flight-btn">
+          Redeem &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- old terminal log removed -->
+
+  </div>
+</div>
+
+<!-- ============================================
+     JAVASCRIPT — SPA + LOGIC
+     ============================================ -->
+<script>
+// ---- STATE ----
+let currentScreen = 'home';
+let currentTone = 'professional';
+const affiliateLink = 'sunwing.ca/ooo?ref=a8f3k2';
+
+// ---- DEFAULT RETURN DATE (1 week from now) ----
+function defaultReturnDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().split('T')[0];
+}
+
+// ---- NAVIGATION ----
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-' + screen);
+  if (target) {
+    target.classList.add('active');
+    // Re-trigger fade-in on windows
+    target.querySelectorAll('.fade-in').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = '';
+    });
+  }
+  currentScreen = screen;
+
+  // Update taskbar active states
+  document.querySelectorAll('.taskbar-btn').forEach(b => b.classList.remove('active-btn'));
+  const tbBtn = document.getElementById('tb-' + screen);
+  if (tbBtn) tbBtn.classList.add('active-btn');
+
+  window.scrollTo(0, 0);
+}
+
+// ---- TONE TOGGLE ----
+function setTone(tone) {
+  currentTone = tone;
+  document.getElementById('tone-professional').classList.toggle('selected', tone === 'professional');
+  document.getElementById('tone-unhinged').classList.toggle('selected', tone === 'unhinged');
+  updateMessage();
+}
+
+// ---- FORMAT DATE ----
+function formatDate(dateStr) {
+  if (!dateStr) return 'TBD';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+// ---- UPDATE MESSAGE ----
+function updateMessage() {
+  const name = document.getElementById('field-name').value || 'Your Name';
+  const returnDate = document.getElementById('field-return').value;
+  const formattedDate = formatDate(returnDate);
+
+  // Auto-update subject
+  document.getElementById('field-subject').value = 'Out of Office: ' + name + ' is away';
+
+  let msg = '';
+  if (currentTone === 'professional') {
+    msg = `Hi,
+
+I'm at the Royalton Riviera in Cancún until ${formattedDate}. Sun, pool, drink in hand. You get the picture.
+
+If this made you jealous, book your own escape here: ${affiliateLink}
+
+${name}`;
+  } else {
+    msg = `Hi,
+
+I'm at the Royalton Riviera in Cancún until ${formattedDate}.
+
+Meanwhile, you're reading this.
+
+The only good part is: there's a deal to get you here too.
+
+${affiliateLink}
+
+${name}`;
+  }
+
+  document.getElementById('message-body').value = msg;
+}
+
+// ---- COPY TO CLIPBOARD ----
+async function copyMessage() {
+  const text = document.getElementById('message-body').value;
+  const btn = document.getElementById('copy-btn');
+  const btnText = document.getElementById('copy-btn-text');
+
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.classList.add('copied');
+    btnText.textContent = 'Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btnText.textContent = 'Copy Your OOO Message';
+    }, 2000);
+  } catch (err) {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.classList.add('copied');
+    btnText.textContent = 'Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btnText.textContent = 'Copy Your OOO Message';
+    }, 2000);
+  }
+}
+
+// ---- TASKBAR CLOCK ----
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  document.getElementById('taskbar-clock').textContent = h12 + ':' + m + ' ' + ampm;
+}
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default return date
+  document.getElementById('field-return').value = defaultReturnDate();
+
+  // Generate initial message
+  updateMessage();
+
+  // Start clock
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // Set initial taskbar state
+  document.getElementById('tb-home').classList.add('active-btn');
+
+  // Animate dashboard points on visit (mock counter)
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('screen-dashboard').classList.contains('active')) {
+      animateDashNumbers();
+    }
+  });
+  observer.observe(document.getElementById('screen-dashboard'), { attributes: true, attributeFilter: ['class'] });
+});
+
+// ---- DASHBOARD NUMBER ANIMATION ----
+function animateNumber(el, target, duration, prefix, suffix) {
+  prefix = prefix || '';
+  suffix = suffix || '';
+  const start = 0;
+  const startTime = performance.now();
+
+  function step(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.floor(start + (target - start) * eased);
+    el.textContent = prefix + current.toLocaleString() + suffix;
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+let dashAnimated = false;
+function animateDashNumbers() {
+  if (dashAnimated) return;
+  dashAnimated = true;
+  animateNumber(document.getElementById('dash-points'), 4720, 1200);
+  animateNumber(document.getElementById('dash-clicks'), 342, 900);
+  animateNumber(document.getElementById('dash-bookings'), 7, 600);
+  animateNumber(document.getElementById('dash-days'), 12, 500);
+}
+</script>
+
+</body>
+</html>

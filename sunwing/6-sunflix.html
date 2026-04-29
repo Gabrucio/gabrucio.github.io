@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUNFLIX — The streaming platform that takes you off-screen.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Spline+Sans+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --orange: #F26522;
+    --orange-light: #ff8a50;
+    --orange-deep: #d44f10;
+    --orange-glow: rgba(242, 101, 34, 0.35);
+    --orange-subtle: rgba(242, 101, 34, 0.08);
+
+    --phosphor: #D4702A;
+    --phosphor-glow: rgba(212, 112, 42, 0.5);
+
+    --bg-base: #08080c;
+    --bg-elevated-1: #0e0e14;
+    --bg-elevated-2: #14141e;
+    --bg-elevated-3: #1a1a28;
+    --bg-surface: #1e1e2e;
+    --bg-surface-hover: #252538;
+
+    --border-subtle: rgba(255,255,255, 0.04);
+    --border-default: rgba(255,255,255, 0.07);
+    --border-hover: rgba(255,255,255, 0.12);
+    --border-accent: rgba(242, 101, 34, 0.3);
+
+    --text-primary: #eeeef2;
+    --text-secondary: #9898b0;
+    --text-tertiary: #606078;
+    --text-muted: #40404f;
+
+    --scanline: rgba(0,0,0,0.12);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 100px;
+
+    --shadow-sm: 0 2px 8px rgba(0,0,0,.3);
+    --shadow-md: 0 8px 24px rgba(0,0,0,.4);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,.5);
+    --shadow-glow: 0 0 40px var(--orange-glow);
+
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s cubic-bezier(.22,1,.36,1);
+    --transition-smooth: 0.4s cubic-bezier(.22,1,.36,1);
+    --transition-slow: 0.6s cubic-bezier(.22,1,.36,1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== TV STATIC OVERLAY (from Option C) ===== */
+  .tv-static-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #111;
+    pointer-events: auto;
+    transition: opacity 0.8s ease;
+  }
+  .tv-static-overlay.clearing {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tv-static-overlay canvas {
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  /* ===== CRT FRAME (from Option C -- persistent) ===== */
+  .crt-frame {
+    position: fixed; inset: 0; z-index: 50;
+    pointer-events: none;
+  }
+  /* Scan lines */
+  .crt-frame::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      var(--scanline) 1px,
+      var(--scanline) 2px
+    );
+    opacity: 0.35;
+  }
+  /* Vignette + warm CRT glow on edges */
+  .crt-frame::after {
+    content: '';
+    position: absolute; inset: 0;
+    box-shadow:
+      inset 0 0 120px 40px rgba(0,0,0,0.65),
+      inset 0 0 60px 10px rgba(212, 112, 42, 0.03);
+    border-radius: 12px;
+  }
+
+  /* ===== SECTION STATIC FLASH (from Option C) ===== */
+  .static-flash {
+    position: fixed; inset: 0; z-index: 40;
+    pointer-events: none;
+    opacity: 0;
+    background: #222;
+    transition: opacity 0.05s;
+  }
+  .static-flash.active { opacity: 0.9; }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: block; }
+
+  /* ===== NAV ===== */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 clamp(16px, 4vw, 40px);
+    height: 56px;
+    background: transparent;
+    transition: background var(--transition-base), box-shadow var(--transition-base);
+  }
+  nav.scrolled {
+    background: rgba(8,8,12,.92);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    box-shadow: 0 1px 0 var(--border-subtle), 0 4px 20px rgba(0,0,0,.3);
+  }
+
+  .nav-left { display: flex; align-items: center; gap: clamp(16px, 3vw, 40px); }
+
+  .nav-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.35rem); font-weight: 700; letter-spacing: 1px;
+    color: var(--orange);
+    text-decoration: none;
+    text-shadow: 0 0 30px var(--orange-glow);
+    transition: text-shadow var(--transition-base);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .nav-logo:hover { text-shadow: 0 0 40px rgba(242,101,34,.5); }
+  .nav-logo span {
+    color: var(--text-tertiary); font-weight: 400; font-size: .65rem;
+    letter-spacing: 1.5px; margin-left: 10px; vertical-align: middle;
+    text-shadow: none;
+  }
+
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a {
+    color: var(--text-secondary); text-decoration: none;
+    font-size: .8rem; font-weight: 500; letter-spacing: .3px;
+    transition: color var(--transition-fast);
+    position: relative; cursor: pointer;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute; bottom: -4px; left: 0; right: 0;
+    height: 1.5px; background: var(--orange);
+    transform: scaleX(0); transform-origin: right;
+    transition: transform var(--transition-base);
+  }
+  .nav-links a:hover { color: var(--text-primary); }
+  .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+  .nav-links a.active-link { color: var(--orange); }
+  .nav-links a.active-link::after { transform: scaleX(1); }
+
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+
+  .nav-search {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); cursor: pointer;
+    border-radius: 50%; transition: color var(--transition-fast), background var(--transition-fast);
+  }
+  .nav-search:hover { color: var(--text-primary); background: rgba(255,255,255,.06); }
+
+  .nav-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .75rem; font-weight: 700; color: #fff;
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    border: 2px solid transparent;
+    position: relative; flex-shrink: 0;
+  }
+  .nav-avatar:hover {
+    box-shadow: 0 0 0 2px var(--orange-glow), 0 4px 12px var(--orange-glow);
+    transform: scale(1.05);
+  }
+  .nav-avatar.open {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 2px var(--orange-glow);
+  }
+
+  .nav-cta {
+    background: var(--orange); color: #fff; border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 20px; font-weight: 600; font-size: .8rem;
+    cursor: pointer; font-family: inherit; letter-spacing: .3px;
+    transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-base);
+    white-space: nowrap;
+  }
+  .nav-cta:hover {
+    background: var(--orange-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--orange-glow);
+  }
+
+  /* ===== DASHBOARD OVERLAY ===== */
+  .dashboard-overlay {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 380px; max-width: 100vw;
+    background: var(--bg-elevated-1);
+    border-left: 1px solid var(--border-default);
+    z-index: 200;
+    transform: translateX(100%);
+    transition: transform var(--transition-smooth);
+    display: flex; flex-direction: column;
+    box-shadow: -8px 0 40px rgba(0,0,0,.5);
+  }
+  .dashboard-overlay.open { transform: translateX(0); }
+
+  .dashboard-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(4px);
+    z-index: 199;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-base);
+  }
+  .dashboard-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .dash-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .dash-panel-header h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1.1rem; font-weight: 700;
+  }
+  .dash-close {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,.06); color: var(--text-secondary);
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+  .dash-close:hover { background: rgba(255,255,255,.12); color: var(--text-primary); }
+
+  .dash-panel-body {
+    padding: 24px;
+    overflow-y: auto; flex: 1;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  .dash-section-label {
+    font-size: .6rem; font-weight: 700; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 12px;
+    font-family: 'Spline Sans Mono', monospace;
+    text-shadow: 0 0 6px rgba(212,112,42,0.2);
+  }
+
+  .dash-balance-block {
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    position: relative; overflow: hidden; text-align: center;
+  }
+  .dash-balance-block::before {
+    content: '';
+    position: absolute; top: -1px; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--orange), transparent);
+  }
+  .dash-balance-amount {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 2.4rem; font-weight: 700; color: var(--orange);
+    text-shadow: 0 0 30px var(--orange-glow), 0 0 8px rgba(212,112,42,0.5);
+    margin-bottom: 4px;
+  }
+  .dash-balance-label {
+    font-size: .78rem; color: var(--text-tertiary);
+    margin-bottom: 20px;
+  }
+
+  .dash-card-stack-wrapper {
+    display: flex; justify-content: center; padding: 0 10px;
+  }
+  .dash-card-stack {
+    display: flex; justify-content: center;
+    position: relative; height: 110px; width: 240px;
+    perspective: 600px; margin: 0 auto;
+  }
+  .dash-card-stack .gc {
+    position: absolute;
+    width: 130px; height: 80px;
+    border-radius: 8px; padding: 8px 10px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: #fff;
+    transition: transform 0.5s cubic-bezier(.22,1,.36,1), opacity 0.4s, box-shadow 0.5s;
+    transform-origin: center bottom; cursor: default; backface-visibility: hidden;
+  }
+  .dash-card-stack .gc .gc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .dash-card-stack .gc .gc-brand { display: flex; flex-direction: column; }
+  .dash-card-stack .gc .gc-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .4rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; opacity: .85;
+  }
+  .dash-card-stack .gc .gc-sub {
+    font-size: .35rem; font-weight: 400; letter-spacing: .8px;
+    opacity: .5; text-transform: uppercase; margin-top: 1px;
+  }
+  .dash-card-stack .gc .gc-value {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .85rem; font-weight: 700;
+    text-shadow: 0 0 8px rgba(212,112,42,0.5);
+  }
+  .dash-card-stack .gc .gc-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+  .dash-card-stack .gc .gc-month { font-size: .4rem; font-weight: 500; opacity: .7; }
+  .dash-card-stack .gc .gc-chip {
+    width: 18px; height: 13px;
+    background: linear-gradient(135deg, rgba(255,255,255,.3), rgba(255,255,255,.15));
+    border-radius: 2px; border: 1px solid rgba(255,255,255,.2);
+  }
+
+  .dash-card-stack .gc:nth-child(1) { transform: translateX(-20px) rotate(-5deg); z-index: 1; box-shadow: 0 3px 8px rgba(0,0,0,.25); }
+  .dash-card-stack .gc:nth-child(2) { transform: translateX(-10px) rotate(-2.5deg); z-index: 2; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+  .dash-card-stack .gc:nth-child(3) { transform: translateX(0) rotate(0); z-index: 3; box-shadow: 0 4px 12px rgba(0,0,0,.35); }
+
+  .dash-card-stack:hover .gc:nth-child(1) { transform: translateX(-80px) rotate(-3deg) translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,.45); }
+  .dash-card-stack:hover .gc:nth-child(2) { transform: translateX(0) rotate(0) translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.45); }
+  .dash-card-stack:hover .gc:nth-child(3) { transform: translateX(80px) rotate(3deg) translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,.45); }
+
+  .dash-book-cta {
+    display: block; width: 100%;
+    padding: 14px 24px;
+    background: var(--orange); color: #fff; border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: .95rem; font-weight: 700; letter-spacing: .3px;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-base);
+    box-shadow: 0 4px 20px var(--orange-glow);
+  }
+  .dash-book-cta:hover {
+    background: var(--orange-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(242,101,34,.4);
+  }
+
+  .dash-activity { display: flex; flex-direction: column; gap: 12px; }
+  .dash-activity-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+  .dash-activity-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: 8px;
+    background: rgba(242,101,34,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem;
+  }
+  .dash-activity-text { font-size: .78rem; color: var(--text-secondary); line-height: 1.4; }
+  .dash-activity-text strong { color: var(--text-primary); font-weight: 600; }
+  .dash-activity-time { font-size: .6rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+
+  /* ===== HERO ===== */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 80px clamp(20px, 4vw, 40px) 60px;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  /* Dark living room background (from Option A) */
+  .hero-bg {
+    position: absolute; inset: 0;
+  }
+  .hero-bg img {
+    width: 100%; height: 100%; object-fit: cover;
+    opacity: 0.14; filter: blur(2px);
+  }
+  /* Warm TV glow radial gradient overlay (from Option A) */
+  .hero-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 35%, rgba(100,140,220,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(242,101,34,0.04) 0%, transparent 60%),
+      linear-gradient(0deg, var(--bg-base) 0%, rgba(8,8,12,.3) 30%, rgba(8,8,12,.05) 50%, rgba(8,8,12,.4) 100%);
+  }
+
+  /* Hero content with blur-to-sharp reveal (from Option C) */
+  .hero-content {
+    position: relative; z-index: 1;
+    max-width: 700px; width: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; gap: clamp(12px, 2vh, 20px);
+    animation: heroReveal 1.2s 2.6s both;
+  }
+  @keyframes heroReveal {
+    from { opacity: 0; filter: blur(8px); transform: scale(1.02); }
+    to { opacity: 1; filter: blur(0); transform: scale(1); }
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .65rem; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--orange);
+    border: 1px solid rgba(242,101,34,.25);
+    padding: 6px 16px; border-radius: var(--radius-pill);
+    background: rgba(242,101,34,.06);
+    backdrop-filter: blur(10px);
+  }
+  .hero-badge .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--orange);
+    animation: pulse-dot 2s ease infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  /* "by Sunwing" SVG logo mark above SUNFLIX */
+  .hero-sunwing-mark {
+    width: clamp(80px, 12vw, 110px);
+    opacity: .5;
+  }
+  .hero-sunwing-mark svg { width: 100%; height: auto; }
+
+  /* SUNFLIX title with blur-to-sharp glow (from Option C) */
+  .hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 700; letter-spacing: 6px;
+    color: var(--orange);
+    text-shadow:
+      0 0 40px var(--orange-glow),
+      0 0 80px rgba(242,101,34,0.2),
+      0 0 2px rgba(242,101,34,0.8);
+    line-height: 1;
+    animation: titleGlow 2.5s 2.8s both;
+  }
+  @keyframes titleGlow {
+    0% { opacity: 0; filter: blur(12px); letter-spacing: 20px; }
+    40% { opacity: 0.7; filter: blur(3px); letter-spacing: 8px; }
+    100% { opacity: 1; filter: blur(0); letter-spacing: 6px; }
+  }
+
+  .hero h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+    font-weight: 800; line-height: 1.05;
+    letter-spacing: -1px;
+    color: var(--text-primary);
+  }
+
+  .hero-tagline {
+    font-size: clamp(.9rem, 1.6vw, 1.05rem);
+    font-weight: 400; color: var(--text-secondary);
+    max-width: 480px;
+  }
+
+  .hero-cta-group {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+    margin-top: 8px;
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--orange); color: #fff;
+    font-weight: 700; font-size: clamp(.9rem, 1.5vw, 1rem);
+    padding: 16px 36px; border-radius: var(--radius-sm);
+    text-decoration: none; border: none; cursor: pointer;
+    font-family: inherit; letter-spacing: .3px;
+    transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-base);
+    box-shadow: 0 4px 24px var(--orange-glow);
+  }
+  .btn-primary:hover {
+    background: var(--orange-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 40px rgba(242,101,34,.4);
+  }
+  .btn-primary svg { transition: transform var(--transition-fast); }
+  .btn-primary:hover svg { transform: translateX(2px); }
+
+  .hero-price {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .72rem; color: var(--text-muted);
+    text-shadow: 0 0 8px rgba(212,112,42,0.2);
+  }
+
+  /* ===== HOW IT WORKS ===== */
+  .how-section {
+    padding: clamp(60px, 8vw, 100px) clamp(20px, 4vw, 40px);
+    background: var(--bg-elevated-1);
+    border-top: 1px solid var(--border-subtle);
+    position: relative; overflow: hidden;
+  }
+  .how-section::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(242,101,34,.04), transparent 70%);
+    pointer-events: none;
+  }
+
+  .how-header {
+    text-align: center; margin-bottom: 32px;
+    position: relative; z-index: 1;
+  }
+
+  .section-eyebrow {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .65rem; font-weight: 600; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--orange);
+    margin-bottom: 12px;
+    text-shadow: 0 0 8px rgba(212,112,42,0.5);
+  }
+
+  .section-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 700; letter-spacing: -1px;
+    margin-bottom: 12px; line-height: 1.1;
+  }
+  .section-subtitle {
+    font-size: clamp(.9rem, 1.5vw, 1.05rem); color: var(--text-secondary);
+    max-width: 480px; margin: 0 auto; font-weight: 300; line-height: 1.6;
+  }
+
+  /* Gift Card Showcase */
+  .gift-card-showcase {
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    padding: clamp(20px, 3vw, 32px);
+    position: relative; overflow: hidden;
+    max-width: 900px; margin: 0 auto 48px;
+  }
+  .gift-card-showcase::before {
+    content: '';
+    position: absolute; top: -1px; left: 40px; right: 40px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--orange), transparent);
+  }
+
+  .showcase-layout {
+    display: flex; align-items: center; gap: 32px;
+  }
+  .showcase-info { flex: 0 0 auto; min-width: 180px; }
+  .showcase-info h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: .9rem; font-weight: 600; color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .showcase-balance {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: clamp(2rem, 4vw, 2.6rem); font-weight: 700; color: var(--orange);
+    text-shadow: 0 0 30px var(--orange-glow), 0 0 8px rgba(212,112,42,0.5);
+    line-height: 1;
+  }
+  .showcase-sub { font-size: .72rem; color: var(--text-tertiary); margin-top: 4px; }
+
+  .showcase-card-area {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    min-width: 0; overflow: hidden;
+  }
+  .card-stack {
+    display: flex; justify-content: center;
+    position: relative;
+    height: 170px; width: 280px; max-width: 100%;
+    perspective: 800px; flex-shrink: 0;
+  }
+
+  /* Hero 3-card fan: center-out spread */
+  .hero-cards .card-stack .gc:nth-child(1) { transform: translateX(-15px) rotate(-4deg); z-index: 1; }
+  .hero-cards .card-stack .gc:nth-child(2) { transform: translateX(0) rotate(0); z-index: 3; }
+  .hero-cards .card-stack .gc:nth-child(3) { transform: translateX(15px) rotate(4deg); z-index: 1; }
+  .hero-cards .card-stack:hover .gc:nth-child(1) { transform: translateX(-90px) rotate(-3deg) translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+  .hero-cards .card-stack:hover .gc:nth-child(2) { transform: translateX(0) rotate(0) translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+  .hero-cards .card-stack:hover .gc:nth-child(3) { transform: translateX(90px) rotate(3deg) translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+
+  .gc {
+    position: absolute;
+    width: 190px; height: 116px;
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: #fff;
+    transition: transform 0.5s cubic-bezier(.22,1,.36,1), opacity 0.4s, box-shadow 0.5s;
+    transform-origin: center bottom; cursor: default; backface-visibility: hidden;
+  }
+
+  .gc-bg-1 { background: linear-gradient(135deg, #F26522, #e04500); }
+  .gc-bg-2 { background: linear-gradient(135deg, #ff7a33, #F26522); }
+  .gc-bg-3 { background: linear-gradient(135deg, #F26522, #d44f10); }
+  .gc-bg-4 { background: linear-gradient(135deg, #e55a1a, #c04010); }
+  .gc-bg-5 { background: linear-gradient(135deg, #ff8844, #F26522); }
+
+  .gc .gc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .gc .gc-brand { display: flex; flex-direction: column; }
+  .gc .gc-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .55rem; font-weight: 700; letter-spacing: 2.5px;
+    text-transform: uppercase; opacity: .85;
+  }
+  .gc .gc-sub {
+    font-size: .45rem; font-weight: 400; letter-spacing: 1px;
+    opacity: .5; text-transform: uppercase; margin-top: 1px;
+  }
+  .gc .gc-value {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 1.2rem; font-weight: 700;
+    text-shadow: 0 0 8px rgba(212,112,42,0.5);
+  }
+  .gc .gc-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+  .gc .gc-month { font-size: .6rem; font-weight: 500; opacity: .7; }
+  .gc .gc-chip {
+    width: 28px; height: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,.3), rgba(255,255,255,.15));
+    border-radius: 3px; border: 1px solid rgba(255,255,255,.2);
+  }
+
+  /* Stacked positions */
+  .gc:nth-child(1) { transform: translateX(-30px) rotate(-5deg); z-index: 1; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+  .gc:nth-child(2) { transform: translateX(-15px) rotate(-2.5deg); z-index: 2; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  .gc:nth-child(3) { transform: translateX(0) rotate(0); z-index: 3; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .gc:nth-child(4) { transform: translateX(15px) rotate(2.5deg); z-index: 4; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  .gc:nth-child(5) { transform: translateX(30px) rotate(5deg); z-index: 5; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+
+  /* Fan out on hover */
+  .card-stack:hover .gc:nth-child(1) { transform: translateX(-110px) rotate(-3deg) translateY(-8px); box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+  .card-stack:hover .gc:nth-child(2) { transform: translateX(-55px) rotate(-1.5deg) translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+  .card-stack:hover .gc:nth-child(3) { transform: translateX(0) rotate(0) translateY(0); box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+  .card-stack:hover .gc:nth-child(4) { transform: translateX(55px) rotate(1.5deg) translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+  .card-stack:hover .gc:nth-child(5) { transform: translateX(110px) rotate(3deg) translateY(-8px); box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+
+  .showcase-flight {
+    text-align: center; margin-top: 12px;
+    font-size: .72rem; color: var(--text-tertiary);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .showcase-flight svg { color: var(--orange); }
+
+  /* Steps grid */
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; max-width: 1100px; margin: 0 auto;
+  }
+
+  .step-card {
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    padding: 36px 28px 32px;
+    position: relative; transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
+    overflow: hidden; text-align: center;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .step-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--orange), transparent);
+    opacity: 0; transition: opacity var(--transition-base);
+  }
+  .step-card:hover {
+    border-color: var(--border-accent);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0,0,0,.35), 0 0 0 1px rgba(242,101,34,.1);
+  }
+  .step-card:hover::before { opacity: 1; }
+
+  .step-number-label {
+    display: inline-block;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .55rem; font-weight: 700; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--orange);
+    background: rgba(242,101,34,.08);
+    border: 1px solid rgba(242,101,34,.15);
+    padding: 3px 12px; border-radius: var(--radius-pill);
+    margin-bottom: 20px;
+    text-shadow: 0 0 8px rgba(212,112,42,0.3);
+  }
+
+  .step-icon-circle {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    color: #fff;
+    box-shadow: 0 4px 20px var(--orange-glow);
+  }
+
+  .step-card h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(.95rem, 1.5vw, 1.1rem);
+    font-weight: 600; line-height: 1.3; margin-bottom: 10px;
+  }
+  .step-card p {
+    font-size: clamp(.8rem, 1.2vw, .85rem);
+    color: var(--text-secondary); line-height: 1.65; font-weight: 400;
+  }
+
+  /* ===== BROWSE HERO BANNER ===== */
+  .browse-hero {
+    position: relative; height: 70vh; min-height: 480px;
+    overflow: hidden; margin-top: 56px;
+  }
+  .browse-hero-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center top;
+    filter: brightness(0.55) saturate(1.1);
+  }
+  .browse-hero-gradient {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(0deg, var(--bg-base) 0%, rgba(8,8,12,.6) 40%, rgba(8,8,12,.1) 60%, rgba(8,8,12,.3) 100%),
+      linear-gradient(90deg, rgba(8,8,12,.85) 0%, rgba(8,8,12,.2) 50%, transparent 80%);
+  }
+  .browse-hero-content {
+    position: absolute; bottom: 60px; left: clamp(20px, 4vw, 40px);
+    z-index: 2; max-width: 520px;
+  }
+  .browse-hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .6rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 3px;
+    background: var(--orange); color: #fff;
+    margin-bottom: 14px;
+  }
+  .browse-hero-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700; line-height: 1.05; letter-spacing: -1px;
+    margin-bottom: 12px; text-shadow: 0 2px 20px rgba(0,0,0,.5);
+  }
+  .browse-hero-desc {
+    font-size: clamp(.85rem, 1.3vw, .95rem); color: var(--text-secondary);
+    line-height: 1.6; margin-bottom: 20px;
+    text-shadow: 0 1px 8px rgba(0,0,0,.6);
+    max-width: 440px;
+  }
+  .browse-hero-meta {
+    display: flex; align-items: center; gap: 14px;
+    font-size: .75rem; color: var(--text-tertiary);
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .browse-hero-meta span { display: flex; align-items: center; gap: 4px; }
+  .browse-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .btn-play {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--orange); color: #fff;
+    font-weight: 700; font-size: .95rem;
+    padding: 12px 32px; border-radius: var(--radius-sm);
+    border: none; cursor: pointer; font-family: inherit;
+    box-shadow: 0 4px 20px var(--orange-glow);
+    transition: background var(--transition-fast), transform var(--transition-fast);
+  }
+  .btn-play:hover { background: var(--orange-light); transform: translateY(-2px); }
+  .btn-info {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.12); color: #fff;
+    font-weight: 500; font-size: .9rem;
+    padding: 12px 24px; border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,.15);
+    cursor: pointer; font-family: inherit; backdrop-filter: blur(8px);
+    transition: background var(--transition-fast);
+  }
+  .btn-info:hover { background: rgba(255,255,255,.2); }
+
+  /* ===== CATALOG ===== */
+  .catalog { padding: 40px 0 48px; background: var(--bg-base); }
+
+  .catalog-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 clamp(20px, 4vw, 40px); margin-bottom: 20px;
+  }
+  .catalog-header h2 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(1.1rem, 2vw, 1.35rem); font-weight: 600;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .catalog-header .see-all {
+    font-size: .8rem; color: var(--text-tertiary);
+    text-decoration: none; font-weight: 500;
+    transition: color var(--transition-fast);
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+  }
+  .catalog-header .see-all:hover { color: var(--orange); }
+
+  .row-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .65rem; font-weight: 600; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text-muted);
+    padding-left: clamp(20px, 4vw, 40px); margin-bottom: 14px;
+    text-shadow: 0 0 6px rgba(212,112,42,0.2);
+  }
+  .row-label .label-line { width: 20px; height: 1px; background: var(--text-muted); }
+
+  .catalog-row-wrapper { position: relative; margin-bottom: 40px; }
+
+  .catalog-row {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    padding: 8px clamp(20px, 4vw, 40px) 16px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .catalog-row::-webkit-scrollbar { display: none; }
+
+  .poster-card {
+    flex: 0 0 clamp(140px, 15vw, 185px);
+    scroll-snap-align: start;
+    position: relative; border-radius: var(--radius-md);
+    overflow: hidden; cursor: pointer; aspect-ratio: 2/3;
+    background: var(--bg-elevated-2);
+    transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+    transform-origin: center bottom;
+  }
+  .poster-card:hover {
+    transform: scale(1.05) translateY(-8px); z-index: 10;
+    box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(242,101,34,.4);
+  }
+
+  .poster-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    transition: transform var(--transition-slow);
+  }
+  .poster-card:hover .poster-bg { transform: scale(1.08); }
+
+  .poster-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(0deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.4) 30%, rgba(0,0,0,.05) 60%, rgba(0,0,0,.2) 100%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 16px;
+  }
+
+  .poster-top-badge {
+    position: absolute; top: 10px; left: 10px;
+    font-size: .55rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 3px;
+    background: var(--orange); color: #fff;
+  }
+  .poster-rating {
+    position: absolute; top: 10px; right: 10px;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .65rem; font-weight: 700;
+    padding: 2px 6px; border-radius: 3px;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+    color: var(--text-primary); border: 1px solid rgba(255,255,255,.1);
+    text-shadow: 0 0 8px rgba(212,112,42,0.3);
+  }
+
+  .poster-genre {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .6rem; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--orange);
+    margin-bottom: 4px; opacity: .9;
+    text-shadow: 0 0 8px rgba(212,112,42,0.5);
+  }
+  .poster-title { font-size: .9rem; font-weight: 700; line-height: 1.25; margin-bottom: 4px; }
+  .poster-meta {
+    font-size: .65rem; color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .poster-meta .sep { opacity: .4; }
+
+  .poster-play {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 48px; height: 48px;
+    background: rgba(242,101,34,.92); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform var(--transition-smooth), box-shadow var(--transition-base);
+    box-shadow: 0 4px 24px rgba(242,101,34,.5); backdrop-filter: blur(4px);
+  }
+  .poster-play svg { fill: #fff; margin-left: 2px; }
+  .poster-card:hover .poster-play { transform: translate(-50%, -50%) scale(1); }
+
+  /* ===== PLAYER OVERLAY ===== */
+  .player-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.92); backdrop-filter: blur(16px);
+    z-index: 300;
+    display: none; align-items: center; justify-content: center; flex-direction: column;
+    padding: clamp(20px, 4vw, 40px);
+  }
+  .player-overlay.open { display: flex; }
+
+  .player-close {
+    position: absolute; top: 24px; right: 24px;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,.08); color: var(--text-primary); font-size: 1.2rem;
+    transition: background var(--transition-fast);
+  }
+  .player-close:hover { background: rgba(255,255,255,.15); }
+
+  .player-screen {
+    width: 100%; max-width: 900px;
+    aspect-ratio: 16/9;
+    background: #000; border-radius: var(--radius-lg);
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .player-screen-bg {
+    position: absolute; inset: 0; opacity: .3;
+    background-size: cover; background-position: center;
+  }
+  .player-big-play {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 72px; height: 72px;
+    background: rgba(242,101,34,.9); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 8px 40px rgba(242,101,34,.5);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .player-big-play:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 12px 50px rgba(242,101,34,.6);
+  }
+  .player-big-play svg { fill: #fff; margin-left: 3px; }
+
+  .player-controls {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 20px;
+    background: linear-gradient(0deg, rgba(0,0,0,.9), transparent);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .player-progress {
+    height: 4px; background: rgba(255,255,255,.2);
+    border-radius: 2px; cursor: pointer; position: relative;
+  }
+  .player-progress-fill {
+    height: 100%; width: 0%; background: var(--orange);
+    border-radius: 2px; transition: width .3s;
+  }
+  .player-bar { display: flex; align-items: center; justify-content: space-between; }
+  .player-bar-left, .player-bar-right { display: flex; align-items: center; gap: 14px; }
+  .player-bar button {
+    background: none; border: none; color: var(--text-secondary);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: color var(--transition-fast);
+  }
+  .player-bar button:hover { color: #fff; }
+  .player-time { font-family: 'Spline Sans Mono', monospace; font-size: .72rem; color: var(--text-tertiary); }
+
+  .player-info { max-width: 900px; width: 100%; margin-top: 24px; }
+  .player-info h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+  .player-info-genre {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: .72rem; color: var(--orange); font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;
+    text-shadow: 0 0 8px rgba(212,112,42,0.5);
+  }
+  .player-info p { font-size: .9rem; color: var(--text-secondary); line-height: 1.6; max-width: 640px; }
+
+  /* ===== FOOTER ===== */
+  footer {
+    padding: clamp(24px, 4vw, 40px);
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-elevated-1);
+    text-align: center;
+  }
+  .footer-brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .8rem; font-weight: 600; letter-spacing: 2px;
+    color: var(--text-tertiary); margin-bottom: 6px;
+  }
+  .footer-copy { font-size: .65rem; color: var(--text-muted); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .steps-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+    .showcase-layout { flex-direction: column; align-items: center; text-align: center; }
+    .showcase-info { text-align: center; }
+    .showcase-card-area { width: 100%; }
+    .card-stack { margin: 0 auto; }
+    .nav-links { display: none; }
+  }
+  @media (max-width: 768px) {
+    .hero-badge { margin-top: 32px; }
+    .browse-hero { height: 60vh; min-height: 400px; }
+  }
+  @media (max-width: 640px) {
+    .hero { padding: 60px 20px; }
+    .poster-card { flex: 0 0 145px; }
+    .card-stack { height: 140px; width: 220px; }
+    .gc { width: 150px; height: 92px; padding: 10px 12px; }
+    .gc .gc-value { font-size: 1rem; }
+    .dashboard-overlay { width: 100%; max-width: 100vw; }
+    .browse-hero-content { left: 20px; bottom: 40px; max-width: calc(100vw - 40px); }
+    .browse-hero { height: 55vh; }
+    .card-stack:hover .gc:nth-child(1) { transform: translateX(-75px) rotate(-3deg) translateY(-6px); }
+    .card-stack:hover .gc:nth-child(2) { transform: translateX(-38px) rotate(-1.5deg) translateY(-3px); }
+    .card-stack:hover .gc:nth-child(3) { transform: translateX(0) rotate(0) translateY(0); }
+    .card-stack:hover .gc:nth-child(4) { transform: translateX(38px) rotate(1.5deg) translateY(-3px); }
+    .card-stack:hover .gc:nth-child(5) { transform: translateX(75px) rotate(3deg) translateY(-6px); }
+    .nav-cta { padding: 6px 14px; font-size: .72rem; }
+    .dash-card-stack { width: 200px; height: 100px; }
+    .dash-card-stack .gc { width: 110px; height: 68px; padding: 6px 8px; }
+    .dash-card-stack .gc .gc-value { font-size: .75rem; }
+    .dash-card-stack:hover .gc:nth-child(1) { transform: translateX(-65px) rotate(-3deg) translateY(-4px); }
+    .dash-card-stack:hover .gc:nth-child(2) { transform: translateX(0) rotate(0) translateY(-2px); }
+    .dash-card-stack:hover .gc:nth-child(3) { transform: translateX(65px) rotate(3deg) translateY(-4px); }
+  }
+  @media (max-width: 360px) {
+    .nav-logo span { display: none; }
+    .card-stack { width: 190px; height: 130px; }
+    .gc { width: 130px; height: 80px; }
+  }
+
+  /* ===== REVEAL ANIMATIONS ===== */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(.22,1,.36,1), transform 0.7s cubic-bezier(.22,1,.36,1);
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+</style>
+</head>
+<body>
+
+<!-- TV STATIC OVERLAY (from Option C) -->
+<div class="tv-static-overlay" id="staticOverlay">
+  <canvas id="staticCanvas"></canvas>
+</div>
+
+<!-- CRT FRAME (from Option C -- always on) -->
+<div class="crt-frame"></div>
+
+<!-- SECTION STATIC FLASH (from Option C) -->
+<div class="static-flash" id="staticFlash"></div>
+
+<!-- ===== NAV ===== -->
+<nav id="nav">
+  <div class="nav-left">
+    <a class="nav-logo" onclick="showScreen('home')" style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1;">SUNFLIX<span style="display: flex; align-items: center; gap: 3px; margin-top: -2px; padding-left: 1px; position: relative;"><span style="font-size: 9px; opacity: 0.6; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 400; letter-spacing: 0.5px; color: #fff;">by</span><svg viewBox="0 0 546.59 139.88" style="height: 16px; opacity: 0.6;"><path fill="#fff" d="M5.53,86.66c4.42,2.21,12.8,5.37,20.22,5.37c6.32,0,9.63-3.16,9.63-6.95c0-3.79-2.53-6.48-9.63-9.95C16.9,70.71,9.48,64.23,9.48,54.6c0-16.11,14.06-26.69,33.96-26.69c9,0,16.11,1.9,19.74,3.95l-5.37,16.11c-3.16-1.42-8.69-3.32-15.48-3.32c-6,0-9.95,2.53-9.95,6.79c0,3.16,3.16,5.84,9.32,8.69c8.53,4.26,17.37,10.58,17.37,21.32c0,17.69-15.01,27.32-35.54,27.17c-9.63-0.16-18.95-2.69-23.53-6L5.53,86.66z"/><path fill="#fff" d="M147.51,29.64l-9.79,52.12c-1.89,9.79-3.16,18.16-4.27,25.11h-20.05l1.42-12.48l-0.32-0.16c-7.9,10.11-17.21,14.37-26.53,14.37c-12.48,0-19.9-6.95-19.9-21.64c0-4.1,0.47-8.84,1.58-14.21l8.22-43.11h22.74l-7.89,41.38c-0.63,3.47-1.1,7.42-1.1,10.27c0,4.9,2.05,8.84,7.74,8.84c7.74,0,15.8-9.32,18.64-24.64l6.79-35.85H147.51z"/><path fill="#fff" d="M147.35,106.87l9.79-52.12c1.9-9.79,3.16-18.16,4.11-25.11h20.06l-1.42,12.79h0.32c7.27-9.94,16.9-14.53,27-14.53c12.63,0,19.9,7.74,19.9,21.16c0,3.48-0.63,9.17-1.26,12.95l-8.53,44.85h-22.74l8.06-42.8c0.47-2.69,0.79-5.68,0.79-8.53c0-5.53-1.9-9.32-7.74-9.32c-7.42,0-15.95,9.32-19.27,26.37l-6.32,34.27H147.35z"/><path fill="#fff" d="M260.42,29.64l0.16,32.85c0.16,8.69-0.16,15.95-0.63,24.47h0.32c2.69-8.21,6.16-15.95,9.32-23.69l15.32-33.64h18.48l1.9,32.54c0.48,9.16,0.79,16.58,0.32,24.79h0.47c2.53-8.53,5.21-16.11,8.36-25.11l13.27-32.22h22.9l-37.59,77.23H291.7l-2.21-26.85c-0.63-8.05-0.63-15.47-0.63-24.63h-0.48c-4.1,10.89-5.84,16.58-9.15,23.53l-13.11,27.95h-21.32l-7.27-77.23H260.42z"/><polygon fill="#fff" points="342.55,106.87 357.24,29.64 379.82,29.64 365.29,106.87"/><path fill="#fff" d="M379.66,106.87l9.79-52.12c1.89-9.79,3.16-18.16,4.1-25.11h20.05l-1.42,12.79h0.32c7.27-9.94,16.9-14.53,27.01-14.53c12.64,0,19.9,7.74,19.9,21.16c0,3.48-0.63,9.17-1.26,12.95l-8.53,44.85h-22.74l8.05-42.8c0.48-2.69,0.79-5.69,0.79-8.53c0-5.53-1.9-9.32-7.74-9.32c-7.42,0-15.95,9.32-19.26,26.37l-6.32,34.27H379.66z"/><path fill="#fff" d="M468.89,117.61c4.26,2.52,13.58,4.27,20.22,4.27c11.37,0,19.74-5.05,23.06-20.53l1.26-6.63h-0.32c-6,7.9-12.95,11.53-22.11,11.53c-15.32,0-24.64-12.48-24.8-27.64c-0.16-25.42,18.17-50.7,51.81-50.7c10.9,0,20.37,2.06,28.58,5.37l-11.68,63.65c-2.69,14.21-7.11,26.85-16.27,34.27c-8.37,6.64-19.59,8.69-29.85,8.69c-10.43,0-19.9-1.89-25.27-4.89L468.89,117.61z M521.96,46.7c-1.74-0.79-5.06-1.42-8.22-1.42c-13.74,0-23.53,15.32-23.53,29.85c0,7.89,3.47,13.58,10.42,13.58c7.42,0,14.85-8.37,17.38-21.32L521.96,46.7z"/><path fill="#fff" d="M383.43,11.12c0,6.73-5.46,10.74-12.19,10.74c-6.73,0-12.19-4.01-12.19-10.74S364.5,0,371.24,0C377.97,0,383.43,4.39,383.43,11.12z"/></svg></span></a>
+    <ul class="nav-links">
+      <li><a onclick="showScreen('home')" data-screen="home">Home</a></li>
+      <li><a onclick="showScreen('catalog')" data-screen="catalog">Browse</a></li>
+    </ul>
+  </div>
+  <div class="nav-right">
+    <div class="nav-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <button class="nav-cta" onclick="showScreen('catalog')">Start Watching</button>
+    <div class="nav-avatar" id="avatarBtn" onclick="toggleDashboard()">JD</div>
+  </div>
+</nav>
+
+<!-- ===== DASHBOARD OVERLAY ===== -->
+<div class="dashboard-backdrop" id="dashBackdrop" onclick="closeDashboard()"></div>
+<div class="dashboard-overlay" id="dashPanel">
+  <div class="dash-panel-header">
+    <h3>My Dashboard</h3>
+    <button class="dash-close" onclick="closeDashboard()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="dash-panel-body">
+    <!-- Balance -->
+    <div>
+      <div class="dash-section-label">Your Balance</div>
+      <div class="dash-balance-block">
+        <div class="dash-balance-amount">$59.97</div>
+        <div class="dash-balance-label">3 cards stacked since Jan 2026</div>
+        <div class="dash-card-stack-wrapper">
+          <div class="dash-card-stack">
+            <div class="gc gc-bg-1">
+              <div class="gc-top">
+                <div class="gc-brand"><span class="gc-logo">Sunwing</span><span class="gc-sub">Gift Card</span></div>
+                <div class="gc-value">$19.99</div>
+              </div>
+              <div class="gc-bottom"><span class="gc-month">Jan 2026</span><div class="gc-chip"></div></div>
+            </div>
+            <div class="gc gc-bg-2">
+              <div class="gc-top">
+                <div class="gc-brand"><span class="gc-logo">Sunwing</span><span class="gc-sub">Gift Card</span></div>
+                <div class="gc-value">$19.99</div>
+              </div>
+              <div class="gc-bottom"><span class="gc-month">Feb 2026</span><div class="gc-chip"></div></div>
+            </div>
+            <div class="gc gc-bg-3">
+              <div class="gc-top">
+                <div class="gc-brand"><span class="gc-logo">Sunwing</span><span class="gc-sub">Gift Card</span></div>
+                <div class="gc-value">$19.99</div>
+              </div>
+              <div class="gc-bottom"><span class="gc-month">Mar 2026</span><div class="gc-chip"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Book Flight CTA -->
+    <button class="dash-book-cta" onclick="alert('Redirecting to Sunwing booking...')">Book Flight &rarr;</button>
+
+    <!-- Recent Activity -->
+    <div>
+      <div class="dash-section-label">Recent Activity</div>
+      <div class="dash-activity">
+        <div class="dash-activity-item">
+          <div class="dash-activity-icon">&#127873;</div>
+          <div class="dash-activity-text"><strong>$19.99 gift card</strong> added to your stack</div>
+          <div class="dash-activity-time">Apr 1</div>
+        </div>
+        <div class="dash-activity-item">
+          <div class="dash-activity-icon">&#9654;</div>
+          <div class="dash-activity-text">Watched <strong>CSI: Miami</strong> S4 E12</div>
+          <div class="dash-activity-time">Mar 28</div>
+        </div>
+        <div class="dash-activity-item">
+          <div class="dash-activity-icon">&#127873;</div>
+          <div class="dash-activity-text"><strong>$19.99 gift card</strong> added to your stack</div>
+          <div class="dash-activity-time">Mar 1</div>
+        </div>
+        <div class="dash-activity-item">
+          <div class="dash-activity-icon">&#9654;</div>
+          <div class="dash-activity-text">Finished <strong>Baywatch</strong> S3</div>
+          <div class="dash-activity-time">Feb 22</div>
+        </div>
+        <div class="dash-activity-item">
+          <div class="dash-activity-icon">&#127873;</div>
+          <div class="dash-activity-text"><strong>$19.99 gift card</strong> added to your stack</div>
+          <div class="dash-activity-time">Feb 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PLAYER OVERLAY ===== -->
+<div class="player-overlay" id="playerOverlay">
+  <button class="player-close" onclick="closePlayer()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="player-screen">
+    <div class="player-screen-bg" id="playerBg"></div>
+    <div class="player-big-play" onclick="simulatePlay()">
+      <svg width="28" height="28" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="white"/></svg>
+    </div>
+    <div class="player-controls">
+      <div class="player-progress"><div class="player-progress-fill" id="playerProgress"></div></div>
+      <div class="player-bar">
+        <div class="player-bar-left">
+          <button onclick="simulatePlay()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+          </button>
+          <button>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+          </button>
+          <button>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+          </button>
+          <span class="player-time">0:00 / 48:00</span>
+        </div>
+        <div class="player-bar-right">
+          <button>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="player-info">
+    <div class="player-info-genre" id="playerGenre">Drama</div>
+    <h3 id="playerTitle">Show Title</h3>
+    <p id="playerDesc">Description goes here.</p>
+  </div>
+</div>
+
+
+<!-- ========================================== -->
+<!-- SCREEN 1 -- HOME                           -->
+<!-- ========================================== -->
+<div class="screen active" id="screen-home">
+
+  <!-- HERO with dark living room bg (Option A) + blur reveal (Option C) -->
+  <section class="hero">
+    <div class="hero-bg">
+      <img src="https://images.unsplash.com/photo-1615986201152-7686a4867f30?w=1920&q=80" alt="">
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge reveal"><div class="dot"></div> Now Streaming</div>
+
+      <h1 class="reveal d1">The streaming platform<br>that takes you off-screen.</h1>
+      <p class="hero-tagline reveal d2">Stream shows. Stack travel credit.</p>
+
+      <!-- Gift Card Fan — same animation as dashboard sidebar -->
+      <div class="hero-cards reveal d3" style="margin: 16px 0 10px;">
+        <div class="card-stack">
+          <div class="gc gc-bg-1"><div class="gc-top"><div class="gc-brand"><span class="gc-logo">Sunwing</span><span class="gc-sub">Gift Card</span></div><div class="gc-value">$19.99</div></div><div class="gc-bottom"><span class="gc-month">Jan</span><div class="gc-chip"></div></div></div>
+          <div class="gc gc-bg-2"><div class="gc-top"><div class="gc-brand"><span class="gc-logo">Sunwing</span><span class="gc-sub">Gift Card</span></div><div class="gc-value">$19.99</div></div><div class="gc-bottom"><span class="gc-month">Feb</span><div class="gc-chip"></div></div></div>
+          <div class="gc gc-bg-3"><div class="gc-top"><div class="gc-brand"><span class="gc-logo">Sunwing</span><span class="gc-sub">Gift Card</span></div><div class="gc-value">$19.99</div></div><div class="gc-bottom"><span class="gc-month">Mar</span><div class="gc-chip"></div></div></div>
+        </div>
+      </div>
+
+      <div class="hero-cta-group reveal d4">
+        <button class="btn-primary" onclick="showScreen('catalog')">
+          Start Watching
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <span class="hero-price">$19.99/month</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS with Gift Card Visual -->
+  <section class="how-section" id="how">
+    <div class="how-header">
+      <p class="section-eyebrow reveal">How Sunflix Works</p>
+      <p class="section-title reveal d1">Stream shows. Stack travel credit.</p>
+      <p class="section-subtitle reveal d2">100% of your $19.99/month turns into Sunwing gift cards.</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="conversion-preview reveal d1" style="max-width: 520px; margin: 0 auto 32px; text-align: center;">
+      <div style="position: relative; width: 100%; padding-top: 28px;">
+        <!-- 3-month marker -->
+        <div style="position: absolute; left: 30%; top: 0; transform: translateX(-50%); text-align: center;">
+          <span style="font-family: 'Spline Sans Mono', monospace; font-size: 0.6rem; color: #94A3B8; display: block;">3 months</span>
+        </div>
+        <!-- The bar -->
+        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: visible; position: relative;">
+          <div style="width: 30%; height: 100%; background: linear-gradient(90deg, #F26522, #F59E0B); border-radius: 4px; transition: width 1s ease;"></div>
+          <!-- Vertical marker line at 30% -->
+          <div style="position: absolute; left: 30%; top: -6px; width: 1px; height: 20px; background: #F26522; transform: translateX(-50%);"></div>
+        </div>
+        <!-- Labels -->
+        <div style="position: relative; margin-top: 8px;">
+          <!-- $59.97 under the marker -->
+          <div style="position: absolute; left: 30%; transform: translateX(-50%); font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; color: #F26522; font-weight: 600; text-shadow: 0 0 8px rgba(212,112,42,0.5);">$59.97</div>
+          <!-- Scale endpoints -->
+          <div style="display: flex; justify-content: space-between; font-family: 'Spline Sans Mono', monospace; font-size: 0.6rem; color: #4a4a5a;">
+            <span>$0</span>
+            <span>$199 flight</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps-grid">
+      <div class="step-card reveal d1">
+        <div class="step-number-label">Step 1</div>
+        <div class="step-icon-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="7" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+        </div>
+        <h3>Pick up the remote</h3>
+        <p>Sign up and start watching classic shows -- from CSI to Baywatch. Yes, really.</p>
+      </div>
+      <div class="step-card reveal d2">
+        <div class="step-number-label">Step 2</div>
+        <div class="step-icon-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
+        </div>
+        <h3>Stack your cards</h3>
+        <p>Every month, a $19.99 Sunwing gift card lands in your account. They stack. They never expire.</p>
+      </div>
+      <div class="step-card reveal d3">
+        <div class="step-number-label">Step 3</div>
+        <div class="step-icon-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+        </div>
+        <h3>Take off</h3>
+        <p>When you've stacked enough, book a real Sunwing flight. Cancel anytime -- keep every card.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+
+<!-- ========================================== -->
+<!-- SCREEN 2 -- BROWSE                         -->
+<!-- ========================================== -->
+<div class="screen" id="screen-catalog">
+
+  <!-- Hero Banner - CSI: Miami -->
+  <div class="browse-hero">
+    <div class="browse-hero-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BNGQ1NDZjMzQtMmE3OC00NWQ1LWJiOTItZWNkNmZlNWRmMTc5XkEyXkFqcGc@._V1_SX1200.jpg');"></div>
+    <div class="browse-hero-gradient"></div>
+    <div class="browse-hero-content">
+      <div class="browse-hero-badge">Featured Show</div>
+      <div class="browse-hero-title">CSI: Miami</div>
+      <div class="browse-hero-meta">
+        <span>10 Seasons</span>
+        <span>Crime / Drama</span>
+        <span>TV-14</span>
+      </div>
+      <div class="browse-hero-desc">Horatio Caine and his team of forensic investigators solve crimes in the sun-soaked streets of Miami. One of the most-watched TV shows in the world at its peak.</div>
+      <div class="browse-hero-actions">
+        <button class="btn-play" onclick="openPlayer('CSI: Miami','Crime / Drama','Horatio Caine and his team of forensic investigators solve crimes in the sun-soaked streets of Miami. One of the most-watched TV shows in the world.','https://m.media-amazon.com/images/M/MV5BNGQ1NDZjMzQtMmE3OC00NWQ1LWJiOTItZWNkNmZlNWRmMTc5XkEyXkFqcGc@._V1_SX1200.jpg')">
+          <svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="white"/></svg>
+          Play
+        </button>
+        <button class="btn-info">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          More Info
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section class="catalog" id="catalog">
+
+    <!-- Row 1: Popular on Sunflix -->
+    <div class="catalog-header">
+      <h2 class="reveal">Popular on Sunflix</h2>
+      <a class="see-all reveal d1">See All <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+    </div>
+    <div class="row-label reveal"><span class="label-line"></span> Trending Now</div>
+    <div class="catalog-row-wrapper">
+      <div class="catalog-row">
+        <div class="poster-card reveal" onclick="openPlayer('CSI: Miami','Crime / Drama','Horatio Caine and his team of forensic investigators solve crimes in the sun-soaked streets of Miami.','https://m.media-amazon.com/images/M/MV5BNGQ1NDZjMzQtMmE3OC00NWQ1LWJiOTItZWNkNmZlNWRmMTc5XkEyXkFqcGc@._V1_SX1200.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BNGQ1NDZjMzQtMmE3OC00NWQ1LWJiOTItZWNkNmZlNWRmMTc5XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Hit</div>
+          <div class="poster-rating">7.1</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Crime / Drama</div>
+            <div class="poster-title">CSI: Miami</div>
+            <div class="poster-meta">10 Seasons <span class="sep">&middot;</span> 43 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d1" onclick="openPlayer('Law & Order','Crime / Legal Drama','Police investigations and courtroom dramas in New York City. The longest-running primetime live-action series in history.','https://static.tvmaze.com/uploads/images/original_untouched/616/1540700.jpg')">
+          <div class="poster-bg" style="background-image: url('https://static.tvmaze.com/uploads/images/original_untouched/616/1540700.jpg');"></div>
+          <div class="poster-rating">7.7</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Crime / Legal</div>
+            <div class="poster-title">Law & Order</div>
+            <div class="poster-meta">24 Seasons <span class="sep">&middot;</span> 44 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d2" onclick="openPlayer('NCIS','Crime / Action','A team of special agents from the Naval Criminal Investigative Service solves cases involving Navy and Marine Corps personnel.','https://m.media-amazon.com/images/M/MV5BZGExNmI3NDMtMjYxYS00Y2ZmLTlkNmItMGNkNTQ1MzA1ZGM1XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BZGExNmI3NDMtMjYxYS00Y2ZmLTlkNmItMGNkNTQ1MzA1ZGM1XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Popular</div>
+          <div class="poster-rating">7.6</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Crime / Action</div>
+            <div class="poster-title">NCIS</div>
+            <div class="poster-meta">21 Seasons <span class="sep">&middot;</span> 42 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d3" onclick="openPlayer('The X-Files','Sci-Fi / Mystery','FBI agents Mulder and Scully investigate paranormal cases and a vast government conspiracy. The truth is out there.','https://m.media-amazon.com/images/M/MV5BNzg3ODVhZWEtYmI0MC00NDQ0LWEyNGYtM2M0MTRhZTZmMjU3XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BNzg3ODVhZWEtYmI0MC00NDQ0LWEyNGYtM2M0MTRhZTZmMjU3XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">8.6</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Sci-Fi / Mystery</div>
+            <div class="poster-title">The X-Files</div>
+            <div class="poster-meta">11 Seasons <span class="sep">&middot;</span> 45 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal" onclick="openPlayer('MacGyver','Action / Adventure','Secret agent Angus MacGyver prefers a Swiss Army knife and duct tape over guns, using his vast scientific knowledge to get out of impossible situations.','https://m.media-amazon.com/images/M/MV5BZjJiY2NkZTQtZWUwYy00YzA0LTg5NTgtZmFhN2JkMmMxNGVjXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BZjJiY2NkZTQtZWUwYy00YzA0LTg5NTgtZmFhN2JkMmMxNGVjXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Classic</div>
+          <div class="poster-rating">7.6</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Action / Adventure</div>
+            <div class="poster-title">MacGyver</div>
+            <div class="poster-meta">7 Seasons <span class="sep">&middot;</span> 47 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d1" onclick="openPlayer('Walker, Texas Ranger','Action / Crime','Martial artist Cordell Walker is a Texas Ranger who uses his fists and roundhouse kicks as much as his badge to bring criminals to justice.','https://m.media-amazon.com/images/M/MV5BMzMyNDZiNWUtMTgzMS00Y2UwLWE3YTAtZjNmYzczMDQ1MDRlXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BMzMyNDZiNWUtMTgzMS00Y2UwLWE3YTAtZjNmYzczMDQ1MDRlXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">6.0</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Action / Crime</div>
+            <div class="poster-title">Walker, Texas Ranger</div>
+            <div class="poster-meta">9 Seasons <span class="sep">&middot;</span> 45 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Classic Drama -->
+    <div class="catalog-header">
+      <h2 class="reveal">Classic Drama</h2>
+      <a class="see-all reveal d1">See All <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+    </div>
+    <div class="row-label reveal"><span class="label-line"></span> Timeless Television</div>
+    <div class="catalog-row-wrapper">
+      <div class="catalog-row">
+        <div class="poster-card reveal" onclick="openPlayer('ER','Medical Drama','The high-octane medical drama set in the emergency room of a Chicago hospital. Launched George Clooney to stardom.','https://m.media-amazon.com/images/M/MV5BMzM5NjQ4M2QtNWQyMy00OWUxLWIyZjktNmY2ZjMyZjA2NWE0XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BMzM5NjQ4M2QtNWQyMy00OWUxLWIyZjktNmY2ZjMyZjA2NWE0XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Essential</div>
+          <div class="poster-rating">7.8</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Medical Drama</div>
+            <div class="poster-title">ER</div>
+            <div class="poster-meta">15 Seasons <span class="sep">&middot;</span> 44 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d1" onclick="openPlayer('The West Wing','Political Drama','An inside look at the lives of the staffers in the West Wing of the White House. Aaron Sorkin at his finest.','https://m.media-amazon.com/images/M/MV5BY2I2Mzc0YjItN2I3MS00NjNjLWE5OWUtYmQzMjkxZjIwOGY5XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BY2I2Mzc0YjItN2I3MS00NjNjLWE5OWUtYmQzMjkxZjIwOGY5XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">8.3</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Political Drama</div>
+            <div class="poster-title">The West Wing</div>
+            <div class="poster-meta">7 Seasons <span class="sep">&middot;</span> 44 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d2" onclick="openPlayer('Frasier','Comedy','After leaving Boston, psychiatrist Frasier Crane hosts a radio show in Seattle, navigating family and love with wit and sophistication.','https://m.media-amazon.com/images/M/MV5BYTYwMjY1OTctZjk4My00ZjllLWFkNTMtNzg2OGVlMGI0MmQ1XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BYTYwMjY1OTctZjk4My00ZjllLWFkNTMtNzg2OGVlMGI0MmQ1XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">8.0</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Comedy</div>
+            <div class="poster-title">Frasier</div>
+            <div class="poster-meta">11 Seasons <span class="sep">&middot;</span> 22 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d3" onclick="openPlayer('Cheers','Comedy','The regulars of a Boston bar, where everybody knows your name. One of the greatest sitcoms ever made.','https://m.media-amazon.com/images/M/MV5BNGFjY2QwM2QtZGI3Yi00MzM3LTliOGUtZDJhNzVhMGNmN2ZjXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BNGFjY2QwM2QtZGI3Yi00MzM3LTliOGUtZDJhNzVhMGNmN2ZjXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Classic</div>
+          <div class="poster-rating">7.9</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Comedy</div>
+            <div class="poster-title">Cheers</div>
+            <div class="poster-meta">11 Seasons <span class="sep">&middot;</span> 22 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal" onclick="openPlayer('M*A*S*H','Comedy / Drama','The staff of a Korean War field hospital use humor to cope with the horrors of war. Still one of the most beloved series of all time.','https://m.media-amazon.com/images/M/MV5BN2U1YTAyMjktOGRjZi00OWUzLTliMzItY2U0MjliNzNhOGFlXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BN2U1YTAyMjktOGRjZi00OWUzLTliMzItY2U0MjliNzNhOGFlXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">8.4</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Comedy / Drama</div>
+            <div class="poster-title">M*A*S*H</div>
+            <div class="poster-meta">11 Seasons <span class="sep">&middot;</span> 25 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d1" onclick="openPlayer('Columbo','Mystery / Crime','The seemingly bumbling but brilliant LAPD detective always gets his man -- usually with one more thing.','https://m.media-amazon.com/images/M/MV5BZDIxMmRhZDQtZjBlNC00OWJkLWI3YmEtZDcyZWRkY2IzNWYxXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BZDIxMmRhZDQtZjBlNC00OWJkLWI3YmEtZDcyZWRkY2IzNWYxXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Iconic</div>
+          <div class="poster-rating">8.2</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Mystery / Crime</div>
+            <div class="poster-title">Columbo</div>
+            <div class="poster-meta">10 Seasons <span class="sep">&middot;</span> 75 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Action & Adventure -->
+    <div class="catalog-header">
+      <h2 class="reveal">Action & Adventure</h2>
+      <a class="see-all reveal d1">See All <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+    </div>
+    <div class="row-label reveal"><span class="label-line"></span> High Octane Classics</div>
+    <div class="catalog-row-wrapper">
+      <div class="catalog-row">
+        <div class="poster-card reveal" onclick="openPlayer('Baywatch','Action / Drama','The sun, the surf, and the lifeguards of Malibu Beach. The most-watched TV show in the world during the 1990s.','https://m.media-amazon.com/images/M/MV5BOGFjNzlhOTUtZDAxZS00M2ZmLWEyNzYtNTJiZDMzZjQ2MTg5XkEyXkFqcGc@._V1_SX1200.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BOGFjNzlhOTUtZDAxZS00M2ZmLWEyNzYtNTJiZDMzZjQ2MTg5XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Hit</div>
+          <div class="poster-rating">5.5</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Action / Drama</div>
+            <div class="poster-title">Baywatch</div>
+            <div class="poster-meta">11 Seasons <span class="sep">&middot;</span> 44 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d1" onclick="openPlayer('Knight Rider','Sci-Fi / Action','Michael Knight and his artificially intelligent car KITT fight crime in this quintessential 80s action series.','https://m.media-amazon.com/images/M/MV5BZjlmZmMwN2MtOWU5OC00ZTE3LThiNjctNTFmYmQyNzM2NzY3XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BZjlmZmMwN2MtOWU5OC00ZTE3LThiNjctNTFmYmQyNzM2NzY3XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">6.9</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Sci-Fi / Action</div>
+            <div class="poster-title">Knight Rider</div>
+            <div class="poster-meta">4 Seasons <span class="sep">&middot;</span> 47 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d2" onclick="openPlayer('The A-Team','Action / Adventure','Four Vietnam veterans, framed for a crime they didn\'t commit, work as soldiers of fortune while on the run from the military.','https://m.media-amazon.com/images/M/MV5BM2U3MWViYTMtYTNmYi00MmRjLThlMzctOWZiNDc3OWIxYTBlXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BM2U3MWViYTMtYTNmYi00MmRjLThlMzctOWZiNDc3OWIxYTBlXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Classic</div>
+          <div class="poster-rating">7.6</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Action / Adventure</div>
+            <div class="poster-title">The A-Team</div>
+            <div class="poster-meta">5 Seasons <span class="sep">&middot;</span> 47 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d3" onclick="openPlayer('Magnum, P.I.','Action / Mystery','Private investigator Thomas Magnum lives the good life in Hawaii while solving cases with charm and a trademark mustache.','https://m.media-amazon.com/images/M/MV5BZTJlNTQ5ZDktNmU4YS00NjllLWIwY2QtNmM4YTI1MWVkMWZiXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BZTJlNTQ5ZDktNmU4YS00NjllLWIwY2QtNmM4YTI1MWVkMWZiXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">7.5</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Action / Mystery</div>
+            <div class="poster-title">Magnum, P.I.</div>
+            <div class="poster-meta">8 Seasons <span class="sep">&middot;</span> 50 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal" onclick="openPlayer('Starsky & Hutch','Crime / Action','Two streetwise detectives in Southern California take on the bad guys with style and a red-and-white Ford Gran Torino.','https://m.media-amazon.com/images/M/MV5BNmI0N2M1YzAtNGZlMi00ZWRlLWI2OGItNDVjNzZjYmIwYmEzXkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BNmI0N2M1YzAtNGZlMi00ZWRlLWI2OGItNDVjNzZjYmIwYmEzXkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-rating">7.2</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Crime / Action</div>
+            <div class="poster-title">Starsky & Hutch</div>
+            <div class="poster-meta">4 Seasons <span class="sep">&middot;</span> 50 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="poster-card reveal d1" onclick="openPlayer('Miami Vice','Crime / Drama','Two undercover detectives in the fast-paced and glamorous world of 1980s Miami. The show that defined a decade of style.','https://m.media-amazon.com/images/M/MV5BY2FmZWMxNWMtNTVkZC00ZTcwLTgyMjAtZjJlNjZlYzM0MDA5XkEyXkFqcGc@._V1_SX300.jpg')">
+          <div class="poster-bg" style="background-image: url('https://m.media-amazon.com/images/M/MV5BY2FmZWMxNWMtNTVkZC00ZTcwLTgyMjAtZjJlNjZlYzM0MDA5XkEyXkFqcGc@._V1_SX300.jpg');"></div>
+          <div class="poster-top-badge">Iconic</div>
+          <div class="poster-rating">7.5</div>
+          <div class="poster-overlay">
+            <div class="poster-genre">Crime / Drama</div>
+            <div class="poster-title">Miami Vice</div>
+            <div class="poster-meta">5 Seasons <span class="sep">&middot;</span> 48 min</div>
+          </div>
+          <div class="poster-play"><svg width="16" height="16" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="footer-brand">Sunflix -- A Sunwing Experience</div>
+  <div class="footer-copy">&copy; 2026 Sunwing Airlines. All rights reserved.</div>
+</footer>
+
+<script>
+// ===== TV STATIC ANIMATION (from Option C) =====
+(function() {
+  const canvas = document.getElementById('staticCanvas');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('staticOverlay');
+  let animFrame;
+  let startTime = Date.now();
+  const DURATION = 2800;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function drawStatic(fade) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const imageData = ctx.createImageData(w, h);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const val = Math.random() * 255;
+      // Warm phosphor tint
+      data[i]     = val * (0.95 + Math.random() * 0.05);
+      data[i + 1] = val * (0.88 + Math.random() * 0.05);
+      data[i + 2] = val * (0.78 + Math.random() * 0.05);
+      data[i + 3] = 255 * fade;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Scan lines over static
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    for (let y = 0; y < h; y += 3) {
+      ctx.fillRect(0, y, w, 1);
+    }
+  }
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / DURATION, 1);
+
+    let fade = 1;
+    if (progress > 0.6) {
+      fade = 1 - ((progress - 0.6) / 0.4);
+    }
+
+    drawStatic(fade);
+
+    if (progress >= 1) {
+      overlay.classList.add('clearing');
+      cancelAnimationFrame(animFrame);
+      setTimeout(() => { overlay.style.display = 'none'; }, 800);
+      return;
+    }
+
+    animFrame = requestAnimationFrame(animate);
+  }
+
+  animate();
+})();
+
+// ===== STATIC FLASH CANVAS (from Option C) =====
+(function() {
+  const flash = document.getElementById('staticFlash');
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;';
+  flash.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function drawNoise() {
+    if (!flash.classList.contains('active')) {
+      requestAnimationFrame(drawNoise);
+      return;
+    }
+    const w = canvas.width;
+    const h = canvas.height;
+    const imageData = ctx.createImageData(w, h);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 16) {
+      const val = Math.random() * 255;
+      for (let j = 0; j < 16 && (i+j+3) < data.length; j += 4) {
+        data[i+j]     = val;
+        data[i+j+1]   = val * 0.9;
+        data[i+j+2]   = val * 0.8;
+        data[i+j+3]   = 200;
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    requestAnimationFrame(drawNoise);
+  }
+  drawNoise();
+})();
+
+// ===== SCREEN MANAGEMENT =====
+let currentScreen = 'home';
+
+function showScreen(name) {
+  // Static flash on transition (from Option C)
+  const flash = document.getElementById('staticFlash');
+  flash.classList.add('active');
+  setTimeout(() => { flash.classList.remove('active'); }, 120);
+
+  setTimeout(() => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + name);
+    if (target) {
+      target.classList.add('active');
+      currentScreen = name;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Re-observe reveals in new screen
+      setTimeout(() => {
+        target.querySelectorAll('.reveal').forEach(el => {
+          el.classList.remove('visible');
+          observer.observe(el);
+        });
+        target.querySelectorAll('.reveal').forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top < window.innerHeight && rect.bottom > 0) {
+            el.classList.add('visible');
+          }
+        });
+      }, 100);
+    }
+
+    // Update nav active states
+    document.querySelectorAll('.nav-links a').forEach(a => {
+      a.classList.toggle('active-link', a.dataset.screen === name);
+    });
+  }, 60);
+}
+
+// ===== NAV SCROLL =====
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+// ===== DASHBOARD =====
+let dashOpen = false;
+function toggleDashboard() {
+  dashOpen = !dashOpen;
+  document.getElementById('dashPanel').classList.toggle('open', dashOpen);
+  document.getElementById('dashBackdrop').classList.toggle('open', dashOpen);
+  document.getElementById('avatarBtn').classList.toggle('open', dashOpen);
+}
+function closeDashboard() {
+  dashOpen = false;
+  document.getElementById('dashPanel').classList.remove('open');
+  document.getElementById('dashBackdrop').classList.remove('open');
+  document.getElementById('avatarBtn').classList.remove('open');
+}
+
+// ===== PLAYER =====
+function openPlayer(title, genre, desc, bg) {
+  const overlay = document.getElementById('playerOverlay');
+  document.getElementById('playerTitle').textContent = title;
+  document.getElementById('playerGenre').textContent = genre;
+  document.getElementById('playerDesc').textContent = desc;
+  const playerBg = document.getElementById('playerBg');
+  if (bg.startsWith('http')) {
+    playerBg.style.background = '';
+    playerBg.style.backgroundImage = 'url(' + bg + ')';
+    playerBg.style.backgroundSize = 'cover';
+    playerBg.style.backgroundPosition = 'center';
+  } else {
+    playerBg.style.backgroundImage = '';
+    playerBg.style.background = bg;
+  }
+  document.getElementById('playerProgress').style.width = '0%';
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePlayer() {
+  document.getElementById('playerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function simulatePlay() {
+  const bar = document.getElementById('playerProgress');
+  bar.style.transition = 'width 3s linear';
+  bar.style.width = '12%';
+  setTimeout(() => { bar.style.width = '25%'; }, 3000);
+}
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closePlayer();
+    closeDashboard();
+  }
+});
+
+// ===== INTERSECTION OBSERVER =====
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      if (entry.target.closest && entry.target.closest('.gift-card-showcase')) {
+        animateShowcase();
+      }
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ===== GIFT CARD SHOWCASE ANIMATION =====
+let showcaseAnimated = false;
+function animateShowcase() {
+  if (showcaseAnimated) return;
+  showcaseAnimated = true;
+
+  const targetAmount = 59.97;
+  const amountEl = document.getElementById('showcaseAmount');
+
+  const duration = 1800;
+  const start = performance.now();
+
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = (eased * targetAmount).toFixed(2);
+
+    if (amountEl) amountEl.textContent = current;
+
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ===== SECTION STATIC FLASH ON SCROLL (from Option C) =====
+(function() {
+  const sections = document.querySelectorAll('.how-section, .catalog');
+  const flash = document.getElementById('staticFlash');
+  let lastSection = null;
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.target !== lastSection) {
+        if (lastSection !== null) {
+          flash.classList.add('active');
+          setTimeout(() => flash.classList.remove('active'), 100);
+        }
+        lastSection = entry.target;
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => sectionObserver.observe(s));
+})();
+</script>
+</body>
+</html>
