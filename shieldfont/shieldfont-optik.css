@@ -1,0 +1,8 @@
+@font-face {
+  font-family: 'ShieldFont Optik';
+  src: url('shieldfont-optik.woff2') format('woff2'),
+       url('shieldfont-optik.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
