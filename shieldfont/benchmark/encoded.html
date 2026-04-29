@@ -116,7 +116,11 @@ nav.top a.active { color: var(--green); }
 }
 body, body * {
   font-family: "ShieldFont Optik", -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
-  font-feature-settings: "liga" 1, "calt" 1 !important;
+  font-feature-settings: "liga" 1, "calt" 1, "dlig" 1 !important;
+  -webkit-font-feature-settings: "liga" 1, "calt" 1, "dlig" 1 !important;
+  -moz-font-feature-settings: "liga" 1, "calt" 1, "dlig" 1 !important;
+  font-variant-ligatures: common-ligatures contextual discretionary-ligatures !important;
+  text-rendering: optimizeLegibility !important;
 }
 /* Code blocks should remain readable as code */
 code, pre, .viewer .line, .scatter-box .dot em {
