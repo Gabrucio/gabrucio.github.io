@@ -532,10 +532,13 @@
   // How many back cards to show peeking behind the front. Cap = 3.
   var MAX_BACK = 3;
   // per-slot geometry for the peek (index 1 = first behind front, etc.)
-  var BACK_DX = 9;    // px right per depth
-  var BACK_DY = 11;   // px down per depth
-  var BACK_SCALE = [1, 0.955, 0.912, 0.872];
-  var BACK_DIM   = [0, 0.10, 0.18, 0.26];
+  // Stack reads like a real pile seen slightly from above: back cards rise
+  // straight UP (no sideways offset) and shrink a touch — the rise + shrink
+  // is the perspective cue, so their top edges peek out above the front card.
+  var BACK_DX = 0;     // no sideways offset — a straight vertical stack
+  var BACK_DY = -14;   // px UP per depth (negative = toward the top)
+  var BACK_SCALE = [1, 0.972, 0.945, 0.918];
+  var BACK_DIM   = [0, 0.06, 0.12, 0.18];
 
   // ---------- sizing ----------
   var COVER_W=340, COVER_H=460, CELL=136;
@@ -695,7 +698,9 @@
     var sc = BACK_SCALE[Math.min(depth, BACK_SCALE.length-1)];
     var dim = BACK_DIM[Math.min(depth, BACK_DIM.length-1)];
     el.style.transform = "translate3d("+dx+"px,"+dy+"px,0) scale("+sc.toFixed(3)+")";
-    el.style.opacity = (isFront ? 1 : 0.9 - depth*0.06).toFixed(3);
+    // backs stay nearly opaque so the pile looks solid; depth reads via the
+    // upward rise + gentle brightness dim rather than transparency
+    el.style.opacity = (isFront ? 1 : 1 - depth*0.03).toFixed(3);
     el.style.filter = dim>0.001 ? "brightness("+(1-dim).toFixed(3)+")" : "none";
     el.style.zIndex = String(100 - depth);
     el.style.pointerEvents = isFront ? "auto" : "none";
