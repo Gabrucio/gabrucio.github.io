@@ -318,7 +318,8 @@
   .btn-ghost:active, .btn-solid:active{transform:translateY(0) scale(.985);}
   .btn-ghost:focus-visible, .btn-solid:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 
-  .cover.is-focus .card2{box-shadow:0 0 0 2px var(--accent), 0 0 0 4px rgba(251,146,60,.28);}
+  /* the centered/selected card always carries the orange ring (shows on first open) */
+  .cover.is-current .card2{box-shadow:0 0 0 2px var(--accent), 0 0 0 4px rgba(251,146,60,.28);}
 
   /* soft ground shadow under the FOCUSED cover only */
   .cf-shadow{
