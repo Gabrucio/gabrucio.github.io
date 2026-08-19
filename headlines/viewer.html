@@ -8,7 +8,10 @@
   /* THEME SWITCH — read ?theme synchronously (no light flash). Default = light. */
   (function(){
     try{
-      var t = new URLSearchParams(window.location.search).get("theme");
+      var q = new URLSearchParams(window.location.search);
+      var t = q.get("theme");
+      /* set color-scheme BEFORE paint so the browser's default bg isn't white (kills the dark-mode white flash) */
+      document.documentElement.style.colorScheme = (t === "dark") ? "dark" : "light";
       if(t === "dark"){ document.documentElement.classList.add("dark"); }
     }catch(_){}
   })();
@@ -52,6 +55,7 @@
   /* dark-only polish */
   html.dark .btn-solid:hover{box-shadow:0 8px 22px rgba(0,0,0,.55);}
   html.dark .cf-nav button{box-shadow:0 4px 14px rgba(0,0,0,.5);}
+  html.dark .stack-ind{background:rgba(23,23,26,.86);border-color:var(--hair);}
 
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;width:100%;height:100%;}
@@ -80,46 +84,6 @@
     flex-direction:column;
     overflow:hidden;
   }
-
-  /* top row: empty left/center (host page pins S&A logo top-left) + close (right) */
-  .dlg-top{
-    display:grid;
-    grid-template-columns:1fr auto 1fr;
-    align-items:center;
-    gap:14px;
-    /* nudge the title + ✕ up so they vertically center on the host-pinned logo */
-    padding:25px 24px 16px 24px;
-    flex:0 0 auto;
-  }
-  /* spacer holds the top-left region; host page pins the S&A logo over it */
-  .dlg-brand-spacer{justify-self:start;min-width:0;height:34px;}
-  .dlg-title{
-    justify-self:center;
-    font-family:Helvetica, Arial, sans-serif;
-    font-size:14px;font-weight:500;letter-spacing:-0.01em;color:var(--ink);
-    white-space:nowrap;-webkit-user-select:none;user-select:none;
-    border:1px solid var(--hair);border-radius:999px;padding:7px 18px;
-    background:var(--surface);
-  }
-  .dlg-top-right{display:flex;align-items:center;gap:12px;justify-self:end;}
-
-  .dlg-close{
-    appearance:none;
-    width:34px;height:34px;
-    border-radius:50%;
-    border:1px solid var(--hair);
-    background:var(--canvas);
-    color:var(--ink);
-    cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    font-size:16px;
-    line-height:1;
-    flex:0 0 auto;
-    transition:border-color .2s ease,background .2s ease,transform .15s ease;
-  }
-  .dlg-close:hover{border-color:var(--muted);background:var(--surface);}
-  .dlg-close:active{transform:scale(.94);}
-  .dlg-close:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
   .dlg-body, .view{
     flex:1 1 auto;
@@ -177,7 +141,7 @@
     z-index:3; /* below the .cf-track scroll driver (z5) so touch swipe/drag works on the cards */
   }
 
-  /* The 3D-transformed unit. Fixed W/H set per-measure so aspect never distorts. */
+  /* The 3D-transformed unit = a PROJECT STACK. Fixed W/H set per-measure. */
   .cover{
     position:absolute;
     top:50%;
@@ -199,9 +163,9 @@
   .cover.is-current{z-index:2000 !important;pointer-events:auto !important;cursor:default;}
   .cover.is-current .card2{pointer-events:auto;}
   /* only the focused card's buttons are truly clickable */
-  .cover.is-current .btn-ghost,
-  .cover.is-current .btn-solid{pointer-events:auto;}
-  .cover.is-current .headArea{cursor:pointer;}
+  .cover.is-current .stack-front .btn-ghost,
+  .cover.is-current .stack-front .btn-solid{pointer-events:auto;}
+  .cover.is-current .stack-front .headArea{cursor:pointer;}
 
   /* shared Lucide arrow sizing */
   .lucide-arrow{
@@ -213,9 +177,35 @@
   }
 
   /* ================================================================
+     PROJECT STACK — front card + back-cards peeking behind
+     ================================================================ */
+  .stack{
+    position:absolute;
+    inset:0;
+    transform-style:preserve-3d;
+  }
+  /* every card slot fills the cover box; offsets/scale/opacity are set per-slot in JS */
+  .stack-card{
+    position:absolute;
+    top:0;left:0;
+    width:100%;height:100%;
+    /* transform + opacity are driven inline; keep them animatable for the cycle */
+    transition:transform .46s cubic-bezier(.22,.61,.36,1), opacity .46s cubic-bezier(.22,.61,.36,1);
+    will-change:transform,opacity;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+  }
+  /* back cards never receive pointer events; only the front card is interactive */
+  .stack-card.stack-back{pointer-events:none;}
+  .stack-card.stack-front{pointer-events:auto;}
+  @media (prefers-reduced-motion:reduce){
+    .stack-card{transition:none;}
+  }
+
+  /* ================================================================
      REFINED article card — clean image on top + panel below
      ================================================================ */
-  .cover .card2{
+  .card2{
     position:relative;
     width:100%;
     height:100%;
@@ -225,47 +215,47 @@
     background:var(--surface);
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
-    transform:translateZ(0);
     display:flex;
     flex-direction:column;
+    box-shadow:0 10px 30px rgba(0,0,0,.10);
   }
 
-  .cover .card2 .o2img{
+  .card2 .o2img{
     flex:0 0 auto;width:100%;height:var(--o2img-h,220px);overflow:hidden;background:var(--surface);
     position:relative;
   }
-  .cover .card2 .o2img::after{
+  .card2 .o2img::after{
     content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--hair-warm);
   }
-  .cover .card2 .o2img img{
+  .card2 .o2img img{
     width:100%;height:100%;object-fit:cover;
     -webkit-user-drag:none;user-select:none;
     transform:scale(1.02);filter:saturate(.96) contrast(1.015);
   }
 
   /* panel = flex column: masthead(top) -> headline area(flex:1) -> meta -> CTA(bottom) */
-  .cover .card2 .o2panel{
+  .card2 .o2panel{
     flex:1 1 auto;
     background:var(--surface);
     padding:22px 26px 22px;
     display:flex;flex-direction:column;align-items:stretch;text-align:center;
     min-height:0;
   }
-  .cover .card2 .masthead{
+  .card2 .masthead{
     flex:0 0 auto;
     display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:22px;
   }
-  .cover .card2 .masthead .lg{
+  .card2 .masthead .lg{
     height:22px;width:22px;border-radius:5px;object-fit:contain;
     background:#fff;border:1px solid var(--hair);padding:1px;flex:0 0 auto;
   }
-  .cover .card2 .masthead .nm{
+  .card2 .masthead .nm{
     font-size:12px;line-height:1;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
   }
 
   /* HEADLINE AREA — flex:1 fills space between masthead and meta; headline centered */
-  .cover .card2 .headArea{
+  .card2 .headArea{
     flex:1 1 auto;
     min-height:0;
     display:flex;
@@ -274,7 +264,7 @@
     overflow:hidden;
     padding:8px 0;
   }
-  .cover .card2 .headArea h3{
+  .card2 .headArea h3{
     margin:0;
     font-weight:500;                 /* medium */
     line-height:1.14;
@@ -285,14 +275,14 @@
     /* font-size is set dynamically by fitHeadline() */
   }
 
-  .cover .card2 .meta{
+  .card2 .meta{
     flex:0 0 auto;
     font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
     display:flex;align-items:baseline;justify-content:center;gap:9px;flex-wrap:wrap;min-height:12px;font-weight:400;
   }
-  .cover .card2 .meta .dot{color:var(--hair-warm);}
-  .cover .card2 .meta .yr{font-variant-numeric:tabular-nums;letter-spacing:.10em;}
-  .cover .card2 .o2foot{
+  .card2 .meta .dot{color:var(--hair-warm);}
+  .card2 .meta .yr{font-variant-numeric:tabular-nums;letter-spacing:.10em;}
+  .card2 .o2foot{
     flex:0 0 auto;
     margin-top:16px;display:flex;justify-content:center;gap:7px;flex-wrap:nowrap;
   }
@@ -318,10 +308,55 @@
   .btn-ghost:active, .btn-solid:active{transform:translateY(0) scale(.985);}
   .btn-ghost:focus-visible, .btn-solid:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 
-  /* the centered/selected card always carries the orange ring (shows on first open) */
-  .cover.is-current .card2{box-shadow:0 0 0 2px var(--accent), 0 0 0 4px rgba(251,146,60,.28);}
+  /* the centered/selected stack's FRONT card always carries the orange ring */
+  .cover.is-current .stack-front .card2{box-shadow:0 0 0 2px var(--accent), 0 0 0 4px rgba(251,146,60,.28), 0 12px 34px rgba(0,0,0,.14);}
 
-  /* soft ground shadow under the FOCUSED cover only */
+  /* ================================================================
+     STACK INDICATOR — "n / total" + up/down cycle hint
+     Only shown on the centered stack when it has >1 article.
+     ================================================================ */
+  .stack-ind{
+    position:absolute;
+    left:50%;
+    bottom:-46px;
+    transform:translateX(-50%);
+    display:flex;align-items:center;gap:7px;
+    padding:4px 10px;
+    border-radius:999px;
+    background:rgba(255,255,255,.9);
+    border:1px solid var(--hair);
+    box-shadow:0 6px 18px rgba(0,0,0,.10);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s ease;
+    z-index:2100;
+    white-space:nowrap;
+  }
+  .cover.is-current .stack-ind.has-stack{opacity:1;pointer-events:auto;}
+  .stack-ind .si-count{
+    font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--ink);
+    font-variant-numeric:tabular-nums;
+  }
+  .stack-ind .si-count b{font-weight:700;}
+  .stack-ind .si-count .si-total{color:var(--muted);font-weight:600;}
+  .stack-ind .si-chevs{display:inline-flex;flex-direction:column;gap:0;line-height:0;}
+  .stack-ind .si-btn{
+    appearance:none;border:none;background:transparent;padding:0 2px;margin:0;
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:color .18s ease,transform .18s ease;
+  }
+  .stack-ind .si-btn:hover{color:var(--ink);}
+  .stack-ind .si-btn:active{transform:scale(.86);}
+  .stack-ind .si-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+  .stack-ind .si-btn svg{width:12px;height:12px;display:block;}
+  .stack-ind .si-down{margin-top:-4px;}
+  .stack-ind .si-hint{
+    font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    padding-left:2px;
+  }
+
+  /* soft ground shadow under the FOCUSED stack only */
   .cf-shadow{
     position:absolute;
     left:50%;top:50%;
@@ -370,6 +405,7 @@
     text-align:center;font-size:10.5px;letter-spacing:.05em;color:var(--muted);
     padding:7px 0 11px;
   }
+  .flow-hint .hint-arr{width:1em;height:1em;display:inline-block;vertical-align:-0.16em;margin:0 .5px;}
 
   @media (prefers-reduced-motion:reduce){
     *{scroll-behavior:auto !important;}
@@ -382,14 +418,6 @@
 
 <div class="viewer" id="viewer" role="region" aria-label="Press coverage">
 
-  <div class="dlg-top">
-    <div class="dlg-brand-spacer" aria-hidden="true"></div>
-    <div class="dlg-title">Headlines</div>
-    <div class="dlg-top-right">
-      <button class="dlg-close" id="dlgClose" aria-label="Close">✕</button>
-    </div>
-  </div>
-
   <div class="dlg-body">
 
     <!-- COVER FLOW (only view) -->
@@ -397,21 +425,21 @@
       <div class="flowStage">
         <div class="coverflow" id="coverflow">
           <div class="cf-nav prev">
-            <button id="navPrev" aria-label="Previous cover">
+            <button id="navPrev" aria-label="Previous project">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
           </div>
           <div class="cf-nav next">
-            <button id="navNext" aria-label="Next cover">
+            <button id="navNext" aria-label="Next project">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
           <div class="cf-shadow" id="cfShadow"></div>
           <div class="cf-viewport" id="cfViewport" aria-hidden="true"></div>
-          <div class="cf-track" id="cfTrack" tabindex="0" role="listbox" aria-label="Press covers"></div>
+          <div class="cf-track" id="cfTrack" tabindex="0" role="listbox" aria-label="Press projects"></div>
         </div>
 
-        <div class="flow-hint">scroll or drag to flip</div>
+        <div class="flow-hint">scroll or drag to flip projects <svg class="hint-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg><svg class="hint-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg> &nbsp;·&nbsp; <svg class="hint-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg><svg class="hint-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg> to cycle a stack</div>
       </div>
     </section>
 
@@ -422,7 +450,7 @@
 (function(){
   "use strict";
 
-  // ---- Records (English headlines). Ordered 1,2,3,4,18,5,6,...,17 ----
+  // ---- Article records (English headlines). All ids live in byId. ----
   var RAW = [
     {"id":1,"outlet":"Fast Company","url":"https://www.fastcompany.com/91585494/this-font-looks-perfectly-normal-to-humans-but-confuses-ai","headlineEN":"This font looks perfectly normal to humans but confuses AI","project":"ShieldFont","slug":"shieldfont","country":"US","year":"2026","img":"assets/img-01.webp","logo":"assets/logo-01.jpg"},
     {"id":2,"outlet":"G1","url":"https://g1.globo.com/economia/midia-e-marketing/noticia/2015/09/anuncio-em-ponto-de-onibus-traz-livro-de-paulo-coelho-na-integra.html","headlineEN":"Bus-stop ad carries a Paulo Coelho book in full","project":"The Alchemist Ad","slug":"nyt-coelho","country":"BR","year":"2015","img":"assets/img-02.webp","logo":"assets/logo-02.png"},
@@ -446,19 +474,36 @@
     {"id":17,"outlet":"RTL+","url":"https://plus.rtl.de/podcast-fur-marketing-und-markenfuhrung-brandtrust-talks-p_15173","headlineEN":"A podcast on marketing and brand management — BrandTrust Talks","project":"Brandtrust Talks","slug":"","country":"DE","year":"2025","img":"assets/img-17.avif","logo":"assets/logo-17.png"}
   ];
 
-  // Order: 1,2,3,4,18,5,6,...,17 — build by id then splice 18 into 5th slot.
   var byId = {}; RAW.forEach(function(r){ byId[r.id]=r; });
-  // hidden (kept in DATA, just not shown): 12 HORIZONT, 13 turi2, 15 Reason Why,
-  // 16 Marketing Directo, 19 Yahoo Tech, 17 RTL+ podcast
-  var ORDER = [1,3,4,5,14,2,20,10,8,6,18,7,11,9];
-  var DATA = ORDER.map(function(id){ return byId[id]; }).filter(Boolean);
+
+  // ---- GROUPS: coverflow items = PROJECT STACKS (in homepage-grid order) ----
+  // index 0 of each ids[] = the default FRONT card; the rest sit behind it.
+  var GROUP_DEF = [
+    { "project":"ShieldFont",        "ids":[1,18] },
+    { "project":"Boring Phone",      "ids":[3,6,7,9] },
+    { "project":"#Optink",           "ids":[5] },
+    { "project":"Our Ice",           "ids":[4,8,11] },
+    { "project":"The Alchemist Ad",  "ids":[2] },
+    { "project":"Pringheels",        "ids":[14] },
+    { "project":"Horeca Platform",   "ids":[10] },
+    { "project":"Big Mac Can",       "ids":[20] }
+  ];
+
+  // materialise groups: resolve ids → article records, drop any missing.
+  var GROUPS = GROUP_DEF.map(function(g){
+    var cards = g.ids.map(function(id){ return byId[id]; }).filter(Boolean);
+    return { project:g.project, cards:cards, frontIndex:0 };
+  }).filter(function(g){ return g.cards.length>0; });
 
   var $ = function(s,r){return (r||document).querySelector(s);};
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function mod(n,m){ return ((n%m)+m)%m; }
 
   // Lucide arrow-up-right — used on "Read article"
   var ARROW = '<svg class="lucide-arrow" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>';
+  var CHEV_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>';
+  var CHEV_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 
   // Project links: RELATIVE /projects/{slug}; "/" if no slug.
   function projHref(d){ return d.slug ? "/projects/"+d.slug : "/"; }
@@ -472,8 +517,8 @@
     return m.join("");
   }
 
-  var items = DATA.slice();
-  var current = 0;
+  var items = GROUPS.slice();   // coverflow "items" are now PROJECT STACKS
+  var current = 0;              // currentGroup (centered project stack)
   var current_frac = 0;
 
   var cfTrack = $("#cfTrack");
@@ -481,8 +526,16 @@
   var cfShadow = $("#cfShadow");
   var coverflow = $("#coverflow");
 
-  var coverEls = [];
+  var coverEls = [];   // one .cover (stack) per group
   var cellEls = [];
+
+  // How many back cards to show peeking behind the front. Cap = 3.
+  var MAX_BACK = 3;
+  // per-slot geometry for the peek (index 1 = first behind front, etc.)
+  var BACK_DX = 9;    // px right per depth
+  var BACK_DY = 11;   // px down per depth
+  var BACK_SCALE = [1, 0.955, 0.912, 0.872];
+  var BACK_DIM   = [0, 0.10, 0.18, 0.26];
 
   // ---------- sizing ----------
   var COVER_W=340, COVER_H=460, CELL=136;
@@ -539,6 +592,28 @@
       '</div>';
   }
 
+  // Build the stack DOM for a group: one .stack-card per article (capped view of backs).
+  // Card order in DOM is fixed; which one is "front" is driven by frontIndex in JS.
+  function stackMarkup(g){
+    var n = g.cards.length;
+    var html = '<div class="stack">';
+    for(var i=0;i<n;i++){
+      html += '<div class="stack-card" data-slot="'+i+'">'+cardMarkup(g.cards[i])+'</div>';
+    }
+    html += '</div>';
+    // stack indicator (only meaningful when n>1; visibility gated by .has-stack + is-current)
+    html += ''+
+      '<div class="stack-ind'+(n>1?' has-stack':'')+'" aria-hidden="'+(n>1?'false':'true')+'">'+
+        '<span class="si-count"><b class="si-cur">1</b><span class="si-sep"> / </span><span class="si-total">'+n+'</span></span>'+
+        '<span class="si-chevs">'+
+          '<button class="si-btn si-up" type="button" aria-label="Previous article in stack" tabindex="-1">'+CHEV_UP+'</button>'+
+          '<button class="si-btn si-down" type="button" aria-label="Next article in stack" tabindex="-1">'+CHEV_DOWN+'</button>'+
+        '</span>'+
+        '<span class="si-hint">cycle</span>'+
+      '</div>';
+    return html;
+  }
+
   function buildCovers(){
     measure();
     cfViewport.innerHTML="";
@@ -547,26 +622,25 @@
 
     var e1=document.createElement("div"); e1.className="cf-cell edge"; cfTrack.appendChild(e1);
 
-    items.forEach(function(d,i){
+    items.forEach(function(g,i){
       var cell=document.createElement("div");
       cell.className="cf-cell"; cfTrack.appendChild(cell); cellEls.push(cell);
 
       var cov=document.createElement("div");
       cov.className="cover"; cov.setAttribute("data-i",i);
-      cov.innerHTML = cardMarkup(d);
+      cov.innerHTML = stackMarkup(g);
 
-      (function(idx, url){
-        cov.addEventListener("click",function(e){
-          // let real anchor clicks (buttons) go through natively
-          if(e.target.closest && e.target.closest(".btn-ghost,.btn-solid")) return;
-          if(dragMoved){ dragMoved=false; return; }
-          if(idx!==current){ goTo(idx,true); return; }
-          // focused card: clicking the headline text opens the article in a new tab
-          if(e.target.closest && e.target.closest(".headArea")){ window.open(url,"_blank","noopener"); }
-        });
-      })(i, d.url);
+      // stack-indicator chevrons cycle this group's front card
+      var up = cov.querySelector(".si-up");
+      var down = cov.querySelector(".si-down");
+      if(up) up.addEventListener("click",function(e){ e.stopPropagation(); if(i===current) cycleFront(-1); });
+      if(down) down.addEventListener("click",function(e){ e.stopPropagation(); if(i===current) cycleFront(1); });
+
       cfViewport.appendChild(cov);
       coverEls.push(cov);
+
+      // paint initial slot layout for this stack
+      layoutStack(i, false);
     });
 
     var e2=document.createElement("div"); e2.className="cf-cell edge"; cfTrack.appendChild(e2);
@@ -574,12 +648,90 @@
     scheduleFit();
   }
 
+  // ---------- STACK LAYOUT (front + peeking backs) ----------
+  // Position every .stack-card of group gi according to its distance-behind-front.
+  // depth 0 = front (full), depth 1..MAX_BACK = visible peeks, deeper = hidden behind.
+  function layoutStack(gi, animate){
+    var cov = coverEls[gi]; if(!cov) return;
+    var g = items[gi];
+    var n = g.cards.length;
+    var front = g.frontIndex;
+    var cards = cov.querySelectorAll(".stack-card");
+    for(var s=0;s<cards.length;s++){
+      var el = cards[s];
+      // circular depth: how many steps this slot sits BEHIND the current front.
+      var depth = mod(s - front, n);
+      if(!animate){
+        // suppress transition on a hard (non-animated) layout to avoid fljust on build/resize
+        el.style.transition = "none";
+      } else {
+        el.style.transition = "";
+      }
+      applyCardSlot(el, depth, n);
+    }
+    if(!animate){
+      // force reflow, then restore transitions so future cycles animate
+      /* eslint-disable no-unused-expressions */
+      cov.offsetHeight;
+      for(var t=0;t<cards.length;t++){ cards[t].style.transition=""; }
+    }
+    updateIndicator(gi);
+  }
+
+  function applyCardSlot(el, depth, n){
+    var isFront = depth===0;
+    el.classList.toggle("stack-front", isFront);
+    el.classList.toggle("stack-back", !isFront);
+    if(depth > MAX_BACK){
+      // behind the visible cap — hide entirely (also the wrap-around card)
+      el.style.opacity = "0";
+      el.style.transform = "translate3d("+(BACK_DX*MAX_BACK)+"px,"+(BACK_DY*MAX_BACK)+"px,0) scale("+BACK_SCALE[MAX_BACK]+")";
+      el.style.zIndex = "0";
+      el.style.pointerEvents = "none";
+      return;
+    }
+    var dx = BACK_DX*depth;
+    var dy = BACK_DY*depth;
+    var sc = BACK_SCALE[Math.min(depth, BACK_SCALE.length-1)];
+    var dim = BACK_DIM[Math.min(depth, BACK_DIM.length-1)];
+    el.style.transform = "translate3d("+dx+"px,"+dy+"px,0) scale("+sc.toFixed(3)+")";
+    el.style.opacity = (isFront ? 1 : 0.9 - depth*0.06).toFixed(3);
+    el.style.filter = dim>0.001 ? "brightness("+(1-dim).toFixed(3)+")" : "none";
+    el.style.zIndex = String(100 - depth);
+    el.style.pointerEvents = isFront ? "auto" : "none";
+  }
+
+  function updateIndicator(gi){
+    var cov = coverEls[gi]; if(!cov) return;
+    var g = items[gi];
+    var ind = cov.querySelector(".stack-ind"); if(!ind) return;
+    var cur = ind.querySelector(".si-cur");
+    if(cur) cur.textContent = String(g.frontIndex+1);
+  }
+
+  // ---------- UP/DOWN cycle: animate front → back, next → front ----------
+  var cycleLock = false;
+  function cycleFront(dir){
+    var g = items[current];
+    if(!g || g.cards.length<2) return;         // single-article project: no-op
+    if(cycleLock) return;
+    var n = g.cards.length;
+    g.frontIndex = mod(g.frontIndex + dir, n);
+    // re-layout with animation (CSS transitions on .stack-card do the buttery move)
+    layoutStack(current, !reduceMotion);
+    // refit the (new) front headline
+    scheduleFit();
+    if(!reduceMotion){
+      cycleLock = true;
+      setTimeout(function(){ cycleLock=false; }, 190);
+    }
+  }
+
   // ---------- dynamic headline fit-to-box ----------
   // Binary-search font-size so each headline fills its flex area (H & W), never clipped.
   var FIT_MIN = 15, FIT_MAX = 30;
   var fitRAF = null;
-  function fitOne(cov){
-    var area = cov.querySelector(".headArea");
+  function fitArea(area){
     var h3 = area && area.querySelector("h3");
     if(!area || !h3) return;
     var availH = area.clientHeight - 16; // minus vertical padding (8+8)
@@ -587,18 +739,18 @@
     if(availH <= 0 || availW <= 0) return;
 
     var lo = FIT_MIN, hi = FIT_MAX, best = FIT_MIN;
-    // 7 iterations of binary search resolve ~29px range to <0.25px — plenty.
     for(var k=0;k<7;k++){
       var mid = (lo+hi)/2;
       h3.style.fontSize = mid+"px";
-      // measure against the true wrap box
       var fits = (h3.scrollHeight <= availH + 0.5) && (h3.scrollWidth <= availW + 0.5);
       if(fits){ best = mid; lo = mid; } else { hi = mid; }
     }
     h3.style.fontSize = best.toFixed(2)+"px";
   }
   function fitAll(){
-    for(var i=0;i<coverEls.length;i++){ fitOne(coverEls[i]); }
+    // fit every card's headArea (front + backs) so a cycle never reveals an unfit headline
+    var areas = cfViewport.querySelectorAll(".headArea");
+    for(var i=0;i<areas.length;i++){ fitArea(areas[i]); }
   }
   function scheduleFit(){
     if(fitRAF) return;
@@ -608,7 +760,7 @@
     });
   }
 
-  // ---------- coverflow transform math ----------
+  // ---------- coverflow transform math (per STACK) ----------
   function renderFlow(){
     if(!coverEls.length) return;
     var scrollLeft = cfTrack.scrollLeft;
@@ -652,8 +804,8 @@
 
       el.style.transform = "perspective(1500px) translate3d("+tx.toFixed(1)+"px,0,"+tz.toFixed(0)+"px) rotateY("+ry.toFixed(1)+"deg) scale("+sc.toFixed(3)+")";
       el.style.opacity = op.toFixed(3);
-      // NOTE: is-current (focused) cover forces z-index/pointer-events via CSS
-      // so its buttons ride above the .cf-track scroll driver.
+      // NOTE: is-current (focused) stack forces z-index/pointer-events via CSS
+      // so its front card's buttons ride above the .cf-track scroll driver.
       var isCur = a<0.5;
       if(!isCur){
         el.style.zIndex = z;
@@ -665,10 +817,13 @@
 
       if(isCur !== el.classList.contains("is-current")){
         el.classList.toggle("is-current", isCur);
-        var links = el.querySelectorAll(".btn-ghost,.btn-solid");
+        // only the centered stack's FRONT card gets tabbable buttons
+        var frontCardEl = el.querySelector(".stack-front");
+        var links = frontCardEl ? frontCardEl.querySelectorAll(".btn-ghost,.btn-solid") : [];
         for(var j=0;j<links.length;j++){ links[j].setAttribute("tabindex", isCur ? "0" : "-1"); }
       }
 
+      // outer 3D filter (blur/dim of the whole stack when off-center)
       var f = "";
       if(blur>0.01) f += "blur("+blur+"px) ";
       if(dim>0.01)  f += "brightness("+(1-dim).toFixed(3)+")";
@@ -851,28 +1006,60 @@
   cfTrack.addEventListener("pointercancel",endDrag);
 
   // The track sits on top (for scroll/swipe), so resolve taps ourselves: figure out
-  // what's under the tap (button / headline / neighbour cover) and act.
+  // what's under the tap (stack chevron / button / headline / neighbour stack) and act.
   cfTrack.addEventListener("click",function(e){
     if(dragMoved){ return; }
     cfTrack.style.pointerEvents="none";
     var el = document.elementFromPoint(e.clientX, e.clientY);
     cfTrack.style.pointerEvents="";
     if(!el || !el.closest) return;
-    var a = el.closest("a.btn-ghost, a.btn-solid");
-    if(a){
-      if(a.classList.contains("btn-solid")){ try{ window.top.location.href = a.href; }catch(_){ window.open(a.href,"_top"); } }
-      else { window.open(a.href, "_blank", "noopener"); }
+
+    // stack-indicator up/down chevrons (centered stack only)
+    var siBtn = el.closest(".si-btn");
+    if(siBtn){
+      var sInd = siBtn.closest(".cover");
+      if(sInd && coverEls.indexOf(sInd)===current){
+        cycleFront(siBtn.classList.contains("si-up") ? -1 : 1);
+      }
       return;
     }
+
+    // CTA buttons — but ONLY when they belong to the centered stack's FRONT card
+    var a = el.closest("a.btn-ghost, a.btn-solid");
+    if(a){
+      var aCover = a.closest(".cover");
+      var aFront = a.closest(".stack-front");
+      if(aCover && coverEls.indexOf(aCover)===current && aFront){
+        if(a.classList.contains("btn-solid")){ try{ window.top.location.href = a.href; }catch(_){ window.open(a.href,"_top"); } }
+        else { window.open(a.href, "_blank", "noopener"); }
+      } else if(aCover){
+        // tapped a button of a neighbouring stack → navigate to that project
+        var ni = coverEls.indexOf(aCover);
+        if(ni>=0 && ni!==current){ keyboardFocus=false; goTo(ni,true); }
+      }
+      return;
+    }
+
     var cover = el.closest(".cover");
     if(!cover) return;
     var idx = coverEls.indexOf(cover);
     if(idx<0) return;
     if(idx!==current){ keyboardFocus=false; goTo(idx,true); return; }
-    if(el.closest(".headArea") && items[current]){ window.open(items[current].url,"_blank","noopener"); }
+    // centered stack: clicking the FRONT card's headline opens the article
+    if(el.closest(".stack-front") && el.closest(".headArea")){
+      var fd = frontCard();
+      if(fd){ window.open(fd.url,"_blank","noopener"); }
+    }
   });
 
-  // ---------- keyboard (step ONE cover) ----------
+  // current group's FRONT article record
+  function frontCard(){
+    var g = items[current];
+    return g ? g.cards[g.frontIndex] : null;
+  }
+
+  // ---------- keyboard ----------
+  // LEFT/RIGHT step ONE project stack; UP/DOWN cycle the centered stack.
   cfTrack.addEventListener("focus",function(){ keyboardFocus=true; updateFocusClass(); });
   cfTrack.addEventListener("blur",function(){ keyboardFocus=false; updateFocusClass(); });
   document.addEventListener("keydown",function(e){
@@ -880,9 +1067,23 @@
     var k=e.key;
     if(k==="ArrowRight"){ e.preventDefault(); keyboardFocus=true; goTo(current+1,true); }
     else if(k==="ArrowLeft"){ e.preventDefault(); keyboardFocus=true; goTo(current-1,true); }
+    else if(k==="ArrowUp"){ e.preventDefault(); cycleFront(-1); }
+    else if(k==="ArrowDown"){ e.preventDefault(); cycleFront(1); }
     else if(k==="Enter"||k===" "){
-      if(document.activeElement===cfTrack && items[current]){ e.preventDefault(); window.open(items[current].url,"_blank","noopener"); }
+      if(document.activeElement===cfTrack){ var fd=frontCard(); if(fd){ e.preventDefault(); window.open(fd.url,"_blank","noopener"); } }
     }
+  });
+
+  // Host (embedding page) forwards arrow keys when the iframe doesn't have focus
+  // (browsers block an iframe from stealing focus after a parent click).
+  window.addEventListener("message", function(e){
+    var d = e.data;
+    if(!d || d.type !== "sa-key") return;
+    var k = d.key;
+    if(k==="ArrowRight"){ keyboardFocus=true; goTo(current+1,true); }
+    else if(k==="ArrowLeft"){ keyboardFocus=true; goTo(current-1,true); }
+    else if(k==="ArrowUp"){ cycleFront(-1); }
+    else if(k==="ArrowDown"){ cycleFront(1); }
   });
 
   $("#navPrev").addEventListener("click",function(){ keyboardFocus=false; goTo(current-1,true); });
@@ -911,7 +1112,17 @@
   function requestClose(){
     try{ window.parent.postMessage('sa-press-close', '*'); }catch(_){}
   }
-  $("#dlgClose").addEventListener("click",requestClose);
+  var dlgCloseBtn = $("#dlgClose");
+  if(dlgCloseBtn){ dlgCloseBtn.addEventListener("click",requestClose); }
+
+  // Live theme sync — the React overlay's dark toggle posts {type:'sa-theme',dark}.
+  window.addEventListener("message", function(e){
+    var d = e.data;
+    if(!d || d.type !== "sa-theme") return;
+    var dark = !!d.dark;
+    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+  });
 
   // ---------- boot: render immediately, full-page, no trigger ----------
   function boot(){
@@ -922,6 +1133,10 @@
       scrollToIndex(current,false);
       renderFlow();
       scheduleFit();
+      // focus the track so arrow keys work immediately (esp. when embedded in an iframe)
+      try{ cfTrack.focus({preventScroll:true}); }catch(_){ try{ cfTrack.focus(); }catch(__){} }
+      // tell the host we've painted so it can fade us in (avoids the white load flash)
+      requestAnimationFrame(function(){ try{ window.parent.postMessage("sa-ready","*"); }catch(_){} });
     });
   }
 
