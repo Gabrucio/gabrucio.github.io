@@ -964,6 +964,12 @@
   //           everywhere, including over the focused card ----------
   var wheelTarget=null, wheelRAF=null;
   function cancelWheel(){ if(wheelRAF){cancelAnimationFrame(wheelRAF);wheelRAF=null;} wheelTarget=null; }
+  // vertical wheel / two-finger scroll → step the CURRENT stack one article per gesture.
+  // Accumulate until a threshold, fire once, then swallow the momentum tail until the
+  // gesture goes quiet — so one deliberate swipe = one article (snap, not free-scroll).
+  var stackAccumY=0, stackWheelLock=false, stackQuietTimer=null;
+  var STACK_WHEEL_THRESHOLD=24;
+  function releaseStackWheel(){ stackWheelLock=false; stackAccumY=0; }
   function wheelLoop(){
     wheelRAF=null;
     if(wheelTarget===null) return;
@@ -979,15 +985,32 @@
     wheelRAF = requestAnimationFrame(wheelLoop);
   }
   coverflow.addEventListener("wheel",function(e){
-    if(reduceMotion || !coverEls.length) return;
-    var dom = (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) ? e.deltaY : e.deltaX;
-    if(dom===0) return;
+    if(!coverEls.length) return;
+    var ay=Math.abs(e.deltaY), ax=Math.abs(e.deltaX);
+    if(ay===0 && ax===0) return;
+
+    // Vertical intent → cycle the current stack's articles (down = next, matches ArrowDown).
+    if(ay >= ax){
+      e.preventDefault();
+      if(stackQuietTimer) clearTimeout(stackQuietTimer);
+      stackQuietTimer = setTimeout(releaseStackWheel, 140);   // gesture ends when the wheel goes quiet
+      if(stackWheelLock) return;                              // already stepped this gesture — ignore momentum tail
+      stackAccumY += e.deltaY;
+      if(Math.abs(stackAccumY) >= STACK_WHEEL_THRESHOLD){
+        cycleFront(stackAccumY > 0 ? 1 : -1);
+        stackWheelLock=true; stackAccumY=0;
+      }
+      return;
+    }
+
+    // Horizontal intent → glide between project stacks (motion — gated by reduce-motion, as before).
+    if(reduceMotion) return;
     e.preventDefault();
     stopSmooth();
     programScroll=false;
     cfTrack.classList.add("no-snap");
     var base = (wheelTarget===null) ? cfTrack.scrollLeft : wheelTarget;
-    wheelTarget = Math.max(0, Math.min(MAX_SCROLL, base + dom*1.05));
+    wheelTarget = Math.max(0, Math.min(MAX_SCROLL, base + e.deltaX*1.05));
     if(wheelRAF===null) wheelRAF=requestAnimationFrame(wheelLoop);
   },{passive:false});
 
@@ -1024,9 +1047,37 @@
   cfTrack.addEventListener("pointerup",endDrag);
   cfTrack.addEventListener("pointercancel",endDrag);
 
+  // ---------- touch: a vertical swipe steps the current stack one article; horizontal
+  //           swipes fall through to the native scroll-snap that pages between projects ----------
+  var tsX=0, tsY=0, tAxis=null, suppressClick=false;
+  cfTrack.addEventListener("touchstart",function(e){
+    if(!coverEls.length || !e.touches.length) return;
+    var t=e.touches[0]; tsX=t.clientX; tsY=t.clientY; tAxis=null; suppressClick=false;
+  },{passive:true});
+  cfTrack.addEventListener("touchmove",function(e){
+    if(tAxis==="h" || !e.touches.length) return;         // horizontal decided → let native scroll run
+    var t=e.touches[0], dx=t.clientX-tsX, dy=t.clientY-tsY;
+    if(tAxis===null){
+      if(Math.abs(dx)<8 && Math.abs(dy)<8) return;        // deadzone until the axis is clear
+      tAxis = (Math.abs(dy) > Math.abs(dx)) ? "v" : "h";
+    }
+    if(tAxis==="v") e.preventDefault();                   // own the vertical gesture
+  },{passive:false});
+  cfTrack.addEventListener("touchend",function(e){
+    if(tAxis!=="v"){ tAxis=null; return; }
+    tAxis=null;
+    var t=(e.changedTouches && e.changedTouches[0]) || null;
+    var dy = t ? (t.clientY - tsY) : 0;
+    if(Math.abs(dy) >= 40){
+      cycleFront(dy > 0 ? 1 : -1);                        // swipe DOWN = next (matches ArrowDown)
+      suppressClick=true;                                 // swallow the synthetic click that follows
+    }
+  },{passive:true});
+
   // The track sits on top (for scroll/swipe), so resolve taps ourselves: figure out
   // what's under the tap (stack chevron / button / headline / neighbour stack) and act.
   cfTrack.addEventListener("click",function(e){
+    if(suppressClick){ suppressClick=false; return; }   // swallow the click a vertical touch-swipe emits
     if(dragMoved){ return; }
     cfTrack.style.pointerEvents="none";
     var el = document.elementFromPoint(e.clientX, e.clientY);
