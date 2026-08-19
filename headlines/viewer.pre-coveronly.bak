@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seneda &amp; Abrucio — In the Press</title>
+<script>
+  /* THEME SWITCH — read ?theme synchronously (no light flash). Default = light. */
+  (function(){
+    try{
+      var t = new URLSearchParams(window.location.search).get("theme");
+      if(t === "dark"){ document.documentElement.classList.add("dark"); }
+    }catch(_){}
+  })();
+</script>
+<style>
+  :root{
+    --canvas:#ffffff;
+    --ink:#0a0a0a;
+    --muted:#737373;
+    --surface:#f5f5f5;
+    --hair:#e5e5e5;
+    --hair-warm:#dcdbd7;
+    --accent:#fb923c;
+    --accent-deep:#9a3412;
+    --radius:14px;
+    --font:Arial, Helvetica, sans-serif;
+  }
+
+  /* DARK PALETTE — mirrors the S&A site's dark theme exactly. */
+  html.dark{
+    --canvas:#0a0a0a;
+    --ink:#fafafa;
+    --muted:#a3a3a3;
+    --surface:#17171a;
+    --hair:#2a2a2a;
+    --hair-warm:#2a2a2a;
+    --accent:#fb923c;
+    --accent-deep:#fdba74;
+  }
+  /* dark-only polish — light mode stays byte-for-byte identical */
+  html.dark .btn-solid:hover{box-shadow:0 8px 22px rgba(0,0,0,.55);}
+  html.dark .cf-nav button{box-shadow:0 4px 14px rgba(0,0,0,.5);}
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;width:100%;height:100%;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:var(--font);
+    background:var(--canvas);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow:hidden;
+  }
+  a{color:inherit;text-decoration:none;}
+  img{display:block;}
+  ::selection{background:rgba(251,146,60,.22);}
+
+  /* ================================================================
+     VIEWER ROOT — fills the page (embedding site controls open/close)
+     ================================================================ */
+  .viewer{
+    position:relative;
+    width:100%;
+    height:100dvh;
+    background:var(--canvas);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  /* top row: view segmented toggle (left) + close (right) */
+  .dlg-top{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:14px;
+    /* match the homepage logo position (sidebar px-6 + py-6 + title mt-2) so it doesn't jump on open */
+    padding:32px 24px 16px 24px;
+    flex:0 0 auto;
+  }
+  /* Persistent S&A wordmark — stays put when the viewer opens */
+  .dlg-brand{
+    justify-self:start;min-width:0;
+    font-family:Helvetica, Arial, sans-serif;
+    font-size:24px;line-height:1;letter-spacing:-0.1em;font-weight:400;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    -webkit-user-select:none;user-select:none;
+  }
+  .dlg-brand b{font-weight:400;}
+  .dlg-top-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .dlg-top-right{display:flex;align-items:center;gap:12px;justify-self:end;}
+  @media (max-width:560px){ .dlg-brand{display:none;} }
+
+  .segment{
+    display:inline-flex;
+    background:var(--surface);
+    border:1px solid var(--hair);
+    border-radius:999px;
+    padding:3px;
+    position:relative;
+    user-select:none;
+  }
+  .segment button{
+    appearance:none;
+    border:0;
+    background:transparent;
+    font-family:var(--font);
+    font-size:12.5px;
+    letter-spacing:.02em;
+    font-weight:600;
+    color:var(--muted);
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    position:relative;
+    z-index:1;
+    transition:color .25s ease;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .segment button svg{width:13px;height:13px;display:block;}
+  .segment button[aria-pressed="true"]{color:#fff;}
+  .segment .thumb{
+    position:absolute;
+    top:3px;left:0;
+    height:calc(100% - 6px);
+    background:var(--accent);
+    border-radius:999px;
+    z-index:0;
+    transform-origin:left center;
+    transition:transform .32s cubic-bezier(.22,.61,.36,1);
+    box-shadow:0 1px 3px rgba(154,52,18,.28);
+    will-change:transform;
+  }
+  .segment button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:2px;}
+
+  .dlg-close{
+    appearance:none;
+    width:34px;height:34px;
+    border-radius:50%;
+    border:1px solid var(--hair);
+    background:var(--canvas);
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    line-height:1;
+    flex:0 0 auto;
+    transition:border-color .2s ease,background .2s ease,transform .15s ease;
+  }
+  .dlg-close:hover{border-color:var(--muted);background:var(--surface);}
+  .dlg-close:active{transform:scale(.94);}
+  .dlg-close:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .dlg-body{
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    position:relative;
+  }
+
+  .view{display:none;flex-direction:column;min-height:0;flex:1 1 auto;}
+  .view.active{display:flex;}
+  .view.anim-in{animation:viewIn .42s cubic-bezier(.22,.61,.36,1);}
+  @keyframes viewIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  /* ================================================================
+     COVER FLOW — stage
+     ================================================================ */
+  .flowStage{
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .coverflow{
+    position:relative;
+    flex:1 1 auto;
+    min-height:0;
+    perspective:1900px;
+    perspective-origin:50% 46%;
+    touch-action:pan-y;
+  }
+  /* invisible native-scroll driver (momentum + snap on touch) */
+  .cf-track{
+    position:absolute;
+    inset:0;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    display:flex;
+    align-items:stretch;
+    outline:none;
+    z-index:5;
+  }
+  .cf-track.no-snap{scroll-snap-type:none;}
+  .cf-track::-webkit-scrollbar{display:none;height:0;width:0;}
+  .cf-cell{
+    flex:0 0 var(--cell,120px);
+    scroll-snap-align:center;
+    height:100%;
+  }
+  .cf-cell.edge{flex-basis:calc(50% - (var(--cell,120px)/2));scroll-snap-align:none;}
+
+  .cf-viewport{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    transform-style:preserve-3d;
+    z-index:3;
+  }
+
+  /* The 3D-transformed unit. Fixed W/H set per-measure so aspect never distorts. */
+  .cover{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:var(--cover-w,300px);
+    height:var(--cover-h,400px);
+    margin-left:calc(var(--cover-w,300px)/-2);
+    margin-top:calc(var(--cover-h,400px)/-2);
+    transform-style:preserve-3d;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    will-change:transform,opacity;
+    pointer-events:auto;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* shared Lucide arrow sizing */
+  .lucide-arrow{
+    width:1em;height:1em;
+    display:inline-block;
+    flex:0 0 auto;
+    transform:translateY(0.02em);
+    transition:transform .2s ease;
+  }
+
+  /* ================================================================
+     REFINED article card — clean image on top + panel below
+     ================================================================ */
+  .cover .card2{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:var(--radius);
+    overflow:hidden;
+    border:1px solid var(--hair-warm);
+    background:var(--surface);
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    transform:translateZ(0);
+    display:flex;
+    flex-direction:column;
+  }
+
+  .cover .card2 .o2img{
+    flex:0 0 auto;width:100%;aspect-ratio:16/10;overflow:hidden;background:var(--surface);
+    position:relative;
+  }
+  .cover .card2 .o2img::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--hair-warm);
+  }
+  .cover .card2 .o2img img{
+    width:100%;height:100%;object-fit:cover;
+    -webkit-user-drag:none;user-select:none;
+    transform:scale(1.02);filter:saturate(.96) contrast(1.015);
+  }
+
+  /* panel = flex column: masthead(top) -> headline area(flex:1) -> meta -> CTA(bottom) */
+  .cover .card2 .o2panel{
+    flex:1 1 auto;
+    background:var(--surface);
+    padding:22px 26px 22px;
+    display:flex;flex-direction:column;align-items:stretch;text-align:center;
+    min-height:0;
+  }
+  .cover .card2 .masthead{
+    flex:0 0 auto;
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:22px;
+  }
+  .cover .card2 .masthead .lg{
+    height:22px;width:22px;border-radius:5px;object-fit:contain;
+    background:#fff;border:1px solid var(--hair);padding:1px;flex:0 0 auto;
+  }
+  .cover .card2 .masthead .nm{
+    font-size:12px;line-height:1;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  }
+
+  /* HEADLINE AREA — flex:1 fills space between masthead and meta; headline centered */
+  .cover .card2 .headArea{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    padding:8px 0;
+  }
+  .cover .card2 .headArea h3{
+    margin:0;
+    font-weight:500;                 /* medium */
+    line-height:1.14;
+    letter-spacing:-0.02em;
+    color:var(--ink);
+    text-wrap:balance;
+    max-width:100%;
+    /* font-size is set dynamically by fitHeadline() */
+  }
+
+  .cover .card2 .meta{
+    flex:0 0 auto;
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:baseline;justify-content:center;gap:9px;flex-wrap:wrap;min-height:12px;font-weight:400;
+  }
+  .cover .card2 .meta .dot{color:var(--hair-warm);}
+  .cover .card2 .meta .yr{font-variant-numeric:tabular-nums;letter-spacing:.10em;}
+  .cover .card2 .o2foot{
+    flex:0 0 auto;
+    margin-top:16px;display:flex;justify-content:center;gap:7px;flex-wrap:nowrap;
+  }
+
+  /* two-button pattern — ghost "Read article" + solid "Go to project", one line, tight */
+  .btn-ghost, .btn-solid{
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.005em;
+    border-radius:var(--radius);padding:9px 15px;cursor:pointer;white-space:nowrap;
+    transition:transform .16s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  .btn-ghost{background:transparent;border:1px solid var(--hair);color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--ink);}
+  .btn-ghost .lucide-arrow{transform:translateY(0);}
+  .btn-ghost:hover .lucide-arrow{transform:translate(2px,-2px);}
+  .btn-solid{background:var(--ink);border:1px solid var(--ink);color:var(--canvas);}
+  .btn-solid:hover{background:var(--muted);border-color:var(--muted);box-shadow:0 8px 22px rgba(0,0,0,.20);transform:translateY(-1px);}
+  .btn-ghost:active, .btn-solid:active{transform:translateY(0) scale(.985);}
+  .btn-ghost:focus-visible, .btn-solid:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+
+  .cover.is-focus .card2{box-shadow:0 0 0 2px var(--accent), 0 0 0 4px rgba(251,146,60,.28);}
+
+  /* soft ground shadow under the FOCUSED cover only */
+  .cf-shadow{
+    position:absolute;
+    left:50%;top:50%;
+    width:var(--cover-w,300px);
+    height:34px;
+    margin-left:calc(var(--cover-w,300px)/-2);
+    border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.24) 0%, rgba(0,0,0,.08) 44%, transparent 72%);
+    filter:blur(9px);
+    z-index:2;
+    pointer-events:none;
+    will-change:transform,opacity;
+  }
+
+  /* nav arrows — clean circular S&A buttons, NO keycaps under them */
+  .cf-nav{
+    position:absolute;
+    top:50%;
+    z-index:8;
+    display:flex;align-items:center;justify-content:center;
+    transform:translateY(-50%);
+  }
+  .cf-nav.prev{left:10px;}
+  .cf-nav.next{right:10px;}
+  .cf-nav button{
+    appearance:none;
+    width:44px;height:44px;
+    border-radius:50%;
+    background:var(--canvas);
+    border:1px solid var(--hair);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink);
+    transform:scale(var(--nsc,1));
+    transition:transform .16s ease,border-color .2s ease,background .2s ease;
+    box-shadow:0 4px 14px rgba(0,0,0,.07);
+  }
+  .cf-nav button:hover{border-color:var(--muted);--nsc:1.07;}
+  .cf-nav button:active{--nsc:.94;}
+  .cf-nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .cf-nav button svg{width:18px;height:18px;}
+
+  /* single quiet micro-hint (no per-chevron keycaps) */
+  .flow-hint{
+    flex:0 0 auto;
+    text-align:center;font-size:10.5px;letter-spacing:.05em;color:var(--muted);
+    padding:7px 0 11px;
+  }
+
+  /* ================================================================
+     GRID VIEW — big, premium, homepage look
+     ================================================================ */
+  .gridScroll{
+    flex:1 1 auto;
+    overflow-y:auto;
+    min-height:0;
+    padding:2px clamp(16px,4vw,26px) 24px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:16px;
+    margin-top:6px;
+  }
+  .gcard{
+    position:relative;
+    border-radius:var(--radius);
+    overflow:hidden;
+    border:1px solid var(--hair);
+    background:var(--surface);
+    aspect-ratio:1/1;
+    cursor:pointer;
+    transform:translateZ(0);
+    transition:transform .3s cubic-bezier(.22,.61,.36,1), border-color .3s ease;
+    will-change:transform;
+    display:block;width:100%;text-align:left;padding:0;font-family:inherit;
+  }
+  .gcard:hover{transform:scale(1.03);border-color:var(--muted);z-index:2;}
+  .gcard img{width:100%;height:100%;object-fit:cover;}
+  .gcard .veil{
+    position:absolute;inset:0;
+    background:linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.36) 24%, transparent 54%);
+  }
+  .gcard .cap{position:absolute;left:0;right:0;bottom:0;padding:15px 15px 14px;color:#fff;}
+  .gcard .cap .out{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+  .gcard .cap .out .lg{width:19px;height:19px;border-radius:5px;background:#fff;object-fit:contain;border:1px solid rgba(255,255,255,.5);flex:0 0 auto;}
+  .gcard .cap .out .nm{font-size:10.5px;letter-spacing:.03em;color:rgba(255,255,255,.85);font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .gcard .cap h3{margin:0;font-weight:400;font-size:18px;line-height:1.1;letter-spacing:-0.01em;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .gcard .cap .sub{margin-top:7px;font-size:11px;letter-spacing:.02em;color:rgba(255,255,255,.75);}
+  .gcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  @media (prefers-reduced-motion:reduce){
+    *{scroll-behavior:auto !important;}
+    .view.anim-in{animation:none;}
+    .segment .thumb{transition:none;}
+    .cover{will-change:auto;}
+    .lucide-arrow{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="viewer" id="viewer" role="region" aria-label="Press coverage">
+
+  <div class="dlg-top">
+    <div class="dlg-brand-spacer" aria-hidden="true"></div>
+    <div class="segment" role="tablist" aria-label="View mode">
+      <span class="thumb" id="segThumb"></span>
+      <button id="viewFlow" aria-pressed="true" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="5" width="8" height="14" rx="1.5"/><path d="M5 8v8M19 8v8" opacity=".55"/></svg>
+        Cover
+      </button>
+      <button id="viewGrid" aria-pressed="false" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.4"/><rect x="13" y="4" width="7" height="7" rx="1.4"/><rect x="4" y="13" width="7" height="7" rx="1.4"/><rect x="13" y="13" width="7" height="7" rx="1.4"/></svg>
+        Grid
+      </button>
+    </div>
+
+    <div class="dlg-top-right">
+      <button class="dlg-close" id="dlgClose" aria-label="Close">✕</button>
+    </div>
+  </div>
+
+  <div class="dlg-body">
+
+    <!-- COVER FLOW -->
+    <section class="view active" id="flowView">
+      <div class="flowStage">
+        <div class="coverflow" id="coverflow">
+          <div class="cf-nav prev">
+            <button id="navPrev" aria-label="Previous cover">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="cf-nav next">
+            <button id="navNext" aria-label="Next cover">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+          <div class="cf-shadow" id="cfShadow"></div>
+          <div class="cf-viewport" id="cfViewport" aria-hidden="true"></div>
+          <div class="cf-track" id="cfTrack" tabindex="0" role="listbox" aria-label="Press covers"></div>
+        </div>
+
+        <div class="flow-hint">scroll or drag to flip</div>
+      </div>
+    </section>
+
+    <!-- GRID -->
+    <section class="view" id="gridView">
+      <div class="gridScroll">
+        <div class="grid" id="grid"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Records (English headlines). Ordered 1,2,3,4,18,5,6,...,17 ----
+  var RAW = [
+    {"id":1,"outlet":"Fast Company","url":"https://www.fastcompany.com/91585494/this-font-looks-perfectly-normal-to-humans-but-confuses-ai","headlineEN":"This font looks perfectly normal to humans but confuses AI","project":"ShieldFont","slug":"shieldfont","country":"US","year":"2026","img":"assets/img-01.webp","logo":"assets/logo-01.jpg"},
+    {"id":2,"outlet":"G1","url":"https://g1.globo.com/economia/midia-e-marketing/noticia/2015/09/anuncio-em-ponto-de-onibus-traz-livro-de-paulo-coelho-na-integra.html","headlineEN":"Bus-stop ad carries a Paulo Coelho book in full","project":"The Alchemist Ad","slug":"nyt-coelho","country":"BR","year":"2015","img":"assets/img-02.webp","logo":"assets/logo-02.png"},
+    {"id":3,"outlet":"WIRED","url":"https://www.wired.com/story/hmd-the-boring-phone-heineken-bodega/","headlineEN":"The Boring Phone Is the Anti-Smartphone We Need Right Now","project":"Boring Phone","slug":"boring-phone","country":"US","year":"2024","img":"assets/img-03.webp","logo":"assets/logo-03.png"},
+    {"id":4,"outlet":"CTV News","url":"https://www.ctvnews.ca/edmonton/article/ice-from-oiler-hometown-rinks-added-to-rogers-place-ahead-of-stanley-cup-final/","headlineEN":"Ice from Oilers' hometown rinks added to Rogers Place ahead of the Stanley Cup Final","project":"Our Ice","slug":"our-ice","country":"CA","year":"2025","img":"assets/img-04.jpg","logo":"assets/logo-04.png"},
+    {"id":18,"outlet":"Ars Technica","url":"https://arstechnica.com/ai/2026/08/new-font-turns-ordinary-webpages-into-nonsense-for-ai-scrapers/","headlineEN":"The web’s newest weapon against AI scrapers is a font","project":"ShieldFont","slug":"shieldfont","country":"US","year":"2026","img":"assets/img-18.jpg","logo":"assets/logo-18.png"},
+    {"id":5,"outlet":"NDR","url":"https://www.ndr.de/nachrichten/schleswig-holstein/Als-Organspender-sichtbar-sein-mit-einem-bestimmten-Tattoo,organspendetattoo102.html","headlineEN":"Be visible as an organ donor — with a specific tattoo","project":"#Optink","slug":"optink","country":"DE","year":"2023","img":"assets/img-05.webp","logo":"assets/logo-05.png"},
+    {"id":6,"outlet":"The Guardian","url":"https://www.theguardian.com/society/2024/apr/27/the-boring-phone-stressed-out-gen-z-ditch-smartphones-for-dumbphones","headlineEN":"The 'boring phone': stressed-out gen Z ditch smartphones for dumbphones","project":"Boring Phone","slug":"boring-phone","country":"UK","year":"2024","img":"assets/img-06.webp","logo":"assets/logo-06.png"},
+    {"id":7,"outlet":"The Verge","url":"https://www.theverge.com/2024/4/16/24132479/hmd-boring-phone-heineken-bodega","headlineEN":"Heineken and HMD made a 'Boring Phone' that can't use social media","project":"Boring Phone","slug":"boring-phone","country":"US","year":"2024","img":"assets/img-07.webp","logo":"assets/logo-07.png"},
+    {"id":8,"outlet":"TSN","url":"https://www.tsn.ca/nhl/ice-from-oiler-hometown-rinks-added-to-edmonton-arena-ahead-of-stanley-cup-final-1.2316161","headlineEN":"Ice from Oilers' hometown rinks added to Edmonton arena ahead of the Stanley Cup Final","project":"Our Ice","slug":"our-ice","country":"CA","year":"2025","img":"assets/img-08.avif","logo":"assets/logo-08.png"},
+    {"id":9,"outlet":"Hypebeast","url":"https://hypebeast.com/2024/4/bodega-x-heineken-hmd-boring-phone-milan-design-week-images","headlineEN":"Bodega x Heineken strip down the smartphone: presenting the 'Boring Phone'","project":"Boring Phone","slug":"boring-phone","country":"US","year":"2024","img":"assets/img-09.avif","logo":"assets/logo-09.avif"},
+    {"id":10,"outlet":"De Restaurantkrant","url":"https://www.derestaurantkrant.nl/horeca-sector-richt-platform-op-om-werken-in-horeca-weer-aantrekkelijk-te-maken","headlineEN":"Hospitality sector launches a platform to make working in hospitality attractive again","project":"Horeca Platform","slug":"","country":"NL","year":"2024","img":"assets/img-10.webp","logo":"assets/logo-10.png"},
+    {"id":11,"outlet":"Global News","url":"https://globalnews.ca/news/11210610/edmonton-oilers-rogers-place-player-ice/","headlineEN":"Ice from Oilers' hometown rinks added to Edmonton's Rogers Place ahead of the Stanley Cup Final","project":"Our Ice","slug":"our-ice","country":"CA","year":"2025","img":"assets/img-11.webp","logo":"assets/logo-11.png"},
+    {"id":12,"outlet":"HORIZONT","url":"https://www.horizont.net/marketing/nachrichten/pringheels-dieser-absurde-produktlaunch-soll-hype-fuer-pringles-generieren-234377","headlineEN":"'Pringheels': the bizarre product Pringles is using to hype its new cans","project":"Pringheels","slug":"pringheels","country":"DE","year":"2026","img":"assets/img-12.jpg","logo":"assets/logo-12.png"},
+    {"id":13,"outlet":"turi2","url":"https://www.turi2.de/aktuell/basta-pringles-liefert-verpackungs-und-schuh-upgrade/","headlineEN":"Basta: Pringles delivers a packaging — and shoe — upgrade","project":"Pringheels","slug":"pringheels","country":"DE","year":"2026","img":"assets/img-13.jpg","logo":"assets/logo-13.png"},
+    {"id":14,"outlet":"Campaign Germany","url":"https://campaigngermany.de/news/beitrag/3336-fashion-it-piece-pringles-und-circus-ramezani-schnallen-pringheels-unter-die-sneaker.html","headlineEN":"Fashion it-piece: Pringles and Circus Ramezani strap 'Pringheels' onto sneakers","project":"Pringheels","slug":"pringheels","country":"DE","year":"2026","img":"assets/img-14.png","logo":"assets/logo-14.png"},
+    {"id":15,"outlet":"Reason Why","url":"https://www.reasonwhy.es/actualidad/pringles-pringheels-tacones-deslizantes-tamano-lata","headlineEN":"Pringles creates sliding heels to flag the bigger size of its crisp can","project":"Pringheels","slug":"pringheels","country":"ES","year":"2026","img":"assets/img-15.jpg","logo":"assets/logo-15.png"},
+    {"id":16,"outlet":"Marketing Directo","url":"https://www.marketingdirecto.com/creacion/campanas-de-marketing/pringles-descuelga-estrafalario-invento-celebrar-latas-pegan-estiron/amp","headlineEN":"Pringles unveils an outlandish invention to celebrate its cans getting taller","project":"Pringheels","slug":"pringheels","country":"ES","year":"2026","img":"assets/img-16.webp","logo":"assets/logo-16.png"},
+    {"id":17,"outlet":"RTL+","url":"https://plus.rtl.de/podcast-fur-marketing-und-markenfuhrung-brandtrust-talks-p_15173","headlineEN":"A podcast on marketing and brand management — BrandTrust Talks","project":"Brandtrust Talks","slug":"","country":"DE","year":"2025","img":"assets/img-17.avif","logo":"assets/logo-17.png"}
+  ];
+
+  // Order: 1,2,3,4,18,5,6,...,17 — build by id then splice 18 into 5th slot.
+  var byId = {}; RAW.forEach(function(r){ byId[r.id]=r; });
+  var ORDER = [1,2,3,4,18,5,6,7,8,9,10,11,12,13,14,15,16,17];
+  var DATA = ORDER.map(function(id){ return byId[id]; }).filter(Boolean);
+
+  var $ = function(s,r){return (r||document).querySelector(s);};
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+  // Lucide arrow-up-right — used on "Read article"
+  var ARROW = '<svg class="lucide-arrow" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>';
+
+  // Project links: RELATIVE /projects/{slug}; "/" if no slug.
+  function projHref(d){ return d.slug ? "/projects/"+d.slug : "/"; }
+
+  // meta (dot is a "·" glyph)
+  function meta(d){
+    var m=[];
+    if(d.country) m.push('<span>'+esc(d.country)+'</span><span class="dot" aria-hidden="true">·</span>');
+    m.push('<span class="yr">'+esc(d.year)+'</span>');
+    m.push('<span class="dot" aria-hidden="true">·</span><span class="pj">'+esc(d.project)+'</span>');
+    return m.join("");
+  }
+
+  var items = DATA.slice();
+  var current = 0;
+  var current_frac = 0;
+
+  var cfTrack = $("#cfTrack");
+  var cfViewport = $("#cfViewport");
+  var cfShadow = $("#cfShadow");
+  var coverflow = $("#coverflow");
+  var gridEl = $("#grid");
+
+  var coverEls = [];
+  var cellEls = [];
+
+  // ---------- sizing ----------
+  var COVER_W=300, COVER_H=400, CELL=118;
+  var TRACK_W=0, EDGE_W=0, MAX_SCROLL=0;
+
+  function measure(){
+    var vw = coverflow.clientWidth;
+    var vh = coverflow.clientHeight;
+
+    // image(16:10 of width) + reserved panel. Solve within available height.
+    var PANEL = 260; // masthead + headline area + meta + CTA + padding
+    var maxH = Math.min(vh - 20, 640);
+    COVER_W = Math.min(Math.round(vw*0.80), 500);
+    COVER_H = Math.round(COVER_W*10/16) + PANEL;
+    if(COVER_H > maxH){
+      var imgH = Math.max(120, maxH - PANEL);
+      COVER_W = Math.round(imgH * 16/10);
+      COVER_H = imgH + PANEL;
+    }
+    if(COVER_W > vw*0.86){
+      COVER_W = Math.round(vw*0.86);
+      COVER_H = Math.round(COVER_W*10/16) + PANEL;
+    }
+    CELL = Math.round(COVER_W * 0.40);
+
+    coverflow.style.setProperty("--cover-w", COVER_W+"px");
+    coverflow.style.setProperty("--cover-h", COVER_H+"px");
+    coverflow.style.setProperty("--cell", CELL+"px");
+    cfShadow.style.setProperty("--cover-w", COVER_W+"px");
+  }
+
+  function cacheTrack(){
+    TRACK_W = cfTrack.clientWidth;
+    EDGE_W = (TRACK_W - CELL)/2;
+    MAX_SCROLL = Math.max(0, cfTrack.scrollWidth - TRACK_W);
+  }
+
+  function cardMarkup(d){
+    return ''+
+      '<div class="card2 v-refined">'+
+        '<div class="o2img"><img src="'+d.img+'" alt="" decoding="async" draggable="false"></div>'+
+        '<div class="o2panel">'+
+          '<div class="masthead"><img class="lg" src="'+d.logo+'" alt="" decoding="async" draggable="false"><span class="nm">'+esc(d.outlet)+'</span></div>'+
+          '<div class="headArea"><h3>'+esc(d.headlineEN)+'</h3></div>'+
+          '<div class="meta">'+meta(d)+'</div>'+
+          '<div class="o2foot">'+
+            '<a class="btn-ghost" href="'+esc(d.url)+'" target="_blank" rel="noopener noreferrer" tabindex="-1">Read article '+ARROW+'</a>'+
+            '<a class="btn-solid" href="'+esc(projHref(d))+'" target="_blank" rel="noopener" tabindex="-1">Go to project</a>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  function buildCovers(){
+    measure();
+    cfViewport.innerHTML="";
+    cfTrack.innerHTML="";
+    coverEls=[]; cellEls=[];
+
+    var e1=document.createElement("div"); e1.className="cf-cell edge"; cfTrack.appendChild(e1);
+
+    items.forEach(function(d,i){
+      var cell=document.createElement("div");
+      cell.className="cf-cell"; cfTrack.appendChild(cell); cellEls.push(cell);
+
+      var cov=document.createElement("div");
+      cov.className="cover"; cov.setAttribute("data-i",i);
+      cov.innerHTML = cardMarkup(d);
+
+      (function(idx){
+        cov.addEventListener("click",function(e){
+          if(e.target.closest && e.target.closest(".btn-ghost,.btn-solid")) return;
+          if(dragMoved){ dragMoved=false; return; }
+          if(idx===current){ window.open(items[idx].url,"_blank","noopener"); }
+          else { goTo(idx,true); }
+        });
+      })(i);
+      cfViewport.appendChild(cov);
+      coverEls.push(cov);
+    });
+
+    var e2=document.createElement("div"); e2.className="cf-cell edge"; cfTrack.appendChild(e2);
+    cacheTrack();
+    scheduleFit();
+  }
+
+  // ---------- dynamic headline fit-to-box ----------
+  // Binary-search font-size so each headline fills its flex area (H & W), never clipped.
+  var FIT_MIN = 15, FIT_MAX = 40;
+  var fitRAF = null;
+  function fitOne(cov){
+    var area = cov.querySelector(".headArea");
+    var h3 = area && area.querySelector("h3");
+    if(!area || !h3) return;
+    var availH = area.clientHeight - 16; // minus vertical padding (8+8)
+    var availW = area.clientWidth;
+    if(availH <= 0 || availW <= 0) return;
+
+    var lo = FIT_MIN, hi = FIT_MAX, best = FIT_MIN;
+    // 7 iterations of binary search resolve ~25px range to <0.2px — plenty.
+    for(var k=0;k<7;k++){
+      var mid = (lo+hi)/2;
+      h3.style.fontSize = mid+"px";
+      // measure against the true wrap box
+      var fits = (h3.scrollHeight <= availH + 0.5) && (h3.scrollWidth <= availW + 0.5);
+      if(fits){ best = mid; lo = mid; } else { hi = mid; }
+    }
+    h3.style.fontSize = best.toFixed(2)+"px";
+  }
+  function fitAll(){
+    for(var i=0;i<coverEls.length;i++){ fitOne(coverEls[i]); }
+  }
+  function scheduleFit(){
+    if(fitRAF) return;
+    fitRAF = requestAnimationFrame(function(){
+      fitRAF = null;
+      fitAll();
+    });
+  }
+
+  // ---------- coverflow transform math ----------
+  function renderFlow(){
+    if(!coverEls.length) return;
+    var scrollLeft = cfTrack.scrollLeft;
+    var centerX = scrollLeft + TRACK_W/2;
+    var pos = (centerX - EDGE_W - CELL/2) / CELL;
+    current_frac = pos;
+
+    var spread = COVER_W * 0.62;
+    var lift   = COVER_W * 0.05;
+    var rot    = 38;
+
+    for(var i=0;i<coverEls.length;i++){
+      var off = i - pos;
+      var a = Math.abs(off);
+      var el = coverEls[i];
+
+      if(a>3.6){
+        if(el.style.opacity!=="0"){
+          el.style.opacity="0";
+          el.style.pointerEvents="none";
+          el.style.visibility="hidden";
+        }
+        continue;
+      }
+      if(el.style.visibility==="hidden") el.style.visibility="";
+
+      var clamped = Math.max(-3.4, Math.min(3.4, off));
+      var ac = Math.abs(clamped);
+      var sgn = clamped<0 ? -1 : (clamped>0?1:0);
+
+      var tx = clamped * spread + sgn * Math.min(ac,1) * lift;
+      var tz = -Math.min(ac,3.4) * 150;
+      var ry = -Math.max(-1,Math.min(1,clamped)) * rot - (ac>1 ? sgn*7 : 0);
+      var sc = 1 - Math.min(ac*0.13, 0.40);   // UNIFORM scale (equal X/Y)
+      var op = 1 - Math.min(a*0.17,0.60);
+      var z  = 1000 - ((a*100)|0);
+
+      var dim = a<0.5 ? 0 : Math.min(a*0.14,0.34);
+      var blurRaw = a<0.6 ? 0 : Math.min((a-0.6)*1.05, 2.5);
+      var blur = Math.round(blurRaw*2)/2;
+
+      el.style.transform = "translate3d("+tx.toFixed(1)+"px,0,"+tz.toFixed(0)+"px) rotateY("+ry.toFixed(1)+"deg) scale("+sc.toFixed(3)+")";
+      el.style.opacity = op.toFixed(3);
+      el.style.zIndex = z;
+      el.style.pointerEvents = op<0.15 ? "none" : "auto";
+
+      var isCur = a<0.5;
+      if(isCur !== el.classList.contains("is-current")){
+        el.classList.toggle("is-current", isCur);
+        var links = el.querySelectorAll(".btn-ghost,.btn-solid");
+        for(var j=0;j<links.length;j++){ links[j].setAttribute("tabindex", isCur ? "0" : "-1"); }
+      }
+
+      var f = "";
+      if(blur>0.01) f += "blur("+blur+"px) ";
+      if(dim>0.01)  f += "brightness("+(1-dim).toFixed(3)+")";
+      el.style.filter = f || "none";
+    }
+
+    var frac = Math.abs(pos - Math.round(pos));
+    var shOp = (1 - Math.min(frac*1.6,0.85)) * 0.9;
+    cfShadow.style.opacity = shOp.toFixed(3);
+    cfShadow.style.transform = "translate3d(0,"+((COVER_H*0.5 - 6)|0)+"px,0) scale("+(1 - frac*0.12).toFixed(3)+")";
+  }
+
+  // ---------- focus ----------
+  function nearestIndex(){
+    return Math.max(0, Math.min(items.length-1, Math.round(current_frac)));
+  }
+  var keyboardFocus=false;
+  function updateFocusClass(){
+    for(var i=0;i<coverEls.length;i++){
+      coverEls[i].classList.toggle("is-focus", i===current && keyboardFocus);
+    }
+  }
+
+  // ---------- scroll helpers ----------
+  function cellScrollLeft(i){
+    var cellCenter = EDGE_W + CELL*i + CELL/2;
+    return Math.round(cellCenter - TRACK_W/2);
+  }
+
+  var animRAF=null, animFrom=0, animTo=0, animStart=0, animDur=0;
+  function easeOutCubic(t){ return 1 - Math.pow(1-t,3); }
+  function stopSmooth(){ if(animRAF){ cancelAnimationFrame(animRAF); animRAF=null; } }
+  function smoothScrollTo(left){
+    stopSmooth();
+    left = Math.max(0, Math.min(MAX_SCROLL, Math.round(left)));
+    if(reduceMotion){ cfTrack.classList.remove("no-snap"); cfTrack.scrollLeft=left; scheduleRender(); return; }
+    animFrom = cfTrack.scrollLeft;
+    animTo = left;
+    if(Math.abs(animTo-animFrom) < 1){ cfTrack.scrollLeft=animTo; scheduleRender(); return; }
+    animStart = performance.now();
+    animDur = Math.min(560, 260 + Math.abs(animTo-animFrom)*0.5);
+    cfTrack.classList.add("no-snap");
+    programScroll = true;
+    animRAF = requestAnimationFrame(smoothStep);
+  }
+  function smoothStep(now){
+    var t = (now-animStart)/animDur;
+    if(t>=1){
+      cfTrack.scrollLeft = animTo;
+      animRAF=null;
+      renderFlow();
+      requestAnimationFrame(function(){
+        cfTrack.classList.remove("no-snap");
+        programScroll=false;
+      });
+      return;
+    }
+    cfTrack.scrollLeft = animFrom + (animTo-animFrom)*easeOutCubic(t);
+    renderFlow();
+    animRAF = requestAnimationFrame(smoothStep);
+  }
+
+  var programScroll = false;
+  function scrollToIndex(i, smooth){
+    if(!cellEls.length) return;
+    i = Math.max(0, Math.min(items.length-1, i));
+    var left = cellScrollLeft(i);
+    if(smooth && !reduceMotion){
+      smoothScrollTo(left);
+    } else {
+      stopSmooth();
+      cfTrack.classList.remove("no-snap");
+      programScroll = true;
+      cfTrack.scrollLeft = left;
+      requestAnimationFrame(function(){ programScroll=false; });
+    }
+  }
+
+  function goTo(i, smooth){
+    i = Math.max(0, Math.min(items.length-1, i));
+    current = i;
+    scrollToIndex(i, smooth);
+    updateFocusClass();
+  }
+
+  // ---------- rAF render loop ----------
+  var rafPending=false;
+  function scheduleRender(){
+    if(rafPending) return;
+    rafPending=true;
+    requestAnimationFrame(function(){
+      rafPending=false;
+      renderFlow();
+      if(programScroll) return;
+      var ni = nearestIndex();
+      if(ni!==current){
+        current = ni;
+        updateFocusClass();
+      }
+    });
+  }
+  cfTrack.addEventListener("scroll",function(){ scheduleRender(); },{passive:true});
+
+  var settleTimer=null;
+  cfTrack.addEventListener("scroll",function(){
+    if(programScroll || dragging) return;
+    clearTimeout(settleTimer);
+    settleTimer=setTimeout(function(){
+      var ni = nearestIndex();
+      var want = cellScrollLeft(ni);
+      if(Math.abs(cfTrack.scrollLeft - want) > 1){
+        goTo(ni, true);
+      }
+    },90);
+  },{passive:true});
+
+  // ---------- wheel hijack (both axes) ----------
+  var wheelTarget=null, wheelRAF=null;
+  function cancelWheel(){ if(wheelRAF){cancelAnimationFrame(wheelRAF);wheelRAF=null;} wheelTarget=null; }
+  function wheelLoop(){
+    wheelRAF=null;
+    if(wheelTarget===null) return;
+    var cur = cfTrack.scrollLeft;
+    var diff = wheelTarget - cur;
+    if(Math.abs(diff) < 0.5){
+      cfTrack.scrollLeft = wheelTarget;
+      wheelTarget=null;
+      requestAnimationFrame(function(){ cfTrack.classList.remove("no-snap"); });
+      return;
+    }
+    cfTrack.scrollLeft = cur + diff*0.22;
+    wheelRAF = requestAnimationFrame(wheelLoop);
+  }
+  coverflow.addEventListener("wheel",function(e){
+    if(reduceMotion || !coverEls.length) return;
+    var dom = (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) ? e.deltaY : e.deltaX;
+    if(dom===0) return;
+    e.preventDefault();
+    stopSmooth();
+    programScroll=false;
+    cfTrack.classList.add("no-snap");
+    var base = (wheelTarget===null) ? cfTrack.scrollLeft : wheelTarget;
+    wheelTarget = Math.max(0, Math.min(MAX_SCROLL, base + dom*1.05));
+    if(wheelRAF===null) wheelRAF=requestAnimationFrame(wheelLoop);
+  },{passive:false});
+
+  // ---------- pointer drag ----------
+  var dragging=false, dragStartX=0, dragStartLeft=0, dragMoved=false, lastX=0, lastT=0, vel=0, dragId=null;
+  cfTrack.addEventListener("pointerdown",function(e){
+    if(e.pointerType==="touch") return;
+    if(!coverEls.length) return;
+    dragging=true; dragMoved=false;
+    dragStartX=e.clientX; dragStartLeft=cfTrack.scrollLeft;
+    lastX=e.clientX; lastT=performance.now(); vel=0; dragId=e.pointerId;
+    cancelWheel(); stopSmooth(); programScroll=false;
+    cfTrack.classList.add("no-snap");
+    try{cfTrack.setPointerCapture(e.pointerId);}catch(_){}
+  });
+  cfTrack.addEventListener("pointermove",function(e){
+    if(!dragging || e.pointerId!==dragId) return;
+    var dx = e.clientX - dragStartX;
+    if(Math.abs(dx)>3) dragMoved=true;
+    cfTrack.scrollLeft = dragStartLeft - dx;
+    var now=performance.now();
+    var dt = now-lastT;
+    if(dt>0){ vel = (e.clientX-lastX)/dt; lastX=e.clientX; lastT=now; }
+    e.preventDefault();
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging=false;
+    try{ if(e&&e.pointerId!=null) cfTrack.releasePointerCapture(e.pointerId); }catch(_){}
+    var proj = cfTrack.scrollLeft - vel*120;
+    var idx = Math.round((proj + TRACK_W/2 - EDGE_W - CELL/2)/CELL);
+    goTo(idx, true);
+  }
+  cfTrack.addEventListener("pointerup",endDrag);
+  cfTrack.addEventListener("pointercancel",endDrag);
+
+  // ---------- keyboard (step ONE cover) ----------
+  cfTrack.addEventListener("focus",function(){ keyboardFocus=true; updateFocusClass(); });
+  cfTrack.addEventListener("blur",function(){ keyboardFocus=false; updateFocusClass(); });
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ e.preventDefault(); requestClose(); return; }
+    if(!$("#flowView").classList.contains("active")) return;
+    var k=e.key;
+    if(k==="ArrowRight"){ e.preventDefault(); keyboardFocus=true; goTo(current+1,true); }
+    else if(k==="ArrowLeft"){ e.preventDefault(); keyboardFocus=true; goTo(current-1,true); }
+    else if(k==="Enter"||k===" "){
+      if(document.activeElement===cfTrack && items[current]){ e.preventDefault(); window.open(items[current].url,"_blank","noopener"); }
+    }
+  });
+
+  $("#navPrev").addEventListener("click",function(){ keyboardFocus=false; goTo(current-1,true); });
+  $("#navNext").addEventListener("click",function(){ keyboardFocus=false; goTo(current+1,true); });
+
+  // ---------- grid ----------
+  function buildGrid(){
+    gridEl.innerHTML="";
+    items.forEach(function(d,i){
+      var a=document.createElement("button");
+      a.className="gcard"; a.type="button";
+      a.setAttribute("aria-label",d.outlet+": "+d.headlineEN);
+      var sub=(d.country?d.country+" · ":"")+d.year+" · "+d.project;
+      a.innerHTML=
+        '<img src="'+d.img+'" alt="" loading="lazy" decoding="async">'+
+        '<div class="veil"></div>'+
+        '<div class="cap">'+
+          '<div class="out"><img class="lg" src="'+d.logo+'" alt="" decoding="async"><span class="nm">'+esc(d.outlet)+'</span></div>'+
+          '<h3>'+esc(d.headlineEN)+'</h3>'+
+          '<div class="sub">'+esc(sub)+'</div>'+
+        '</div>';
+      (function(idx){
+        a.addEventListener("click",function(){
+          current = idx;
+          setView("flow");
+          requestAnimationFrame(function(){
+            cacheTrack();
+            scrollToIndex(idx,false);
+            renderFlow();
+          });
+        });
+      })(i);
+      gridEl.appendChild(a);
+    });
+  }
+
+  // ---------- view toggle ----------
+  var segThumb=$("#segThumb"), bFlow=$("#viewFlow"), bGrid=$("#viewGrid");
+  var thumbBaseW=0;
+  function positionThumb(btn){
+    if(!thumbBaseW){
+      thumbBaseW = bFlow.offsetWidth;
+      segThumb.style.width = thumbBaseW+"px";
+    }
+    if(!thumbBaseW) return;
+    var sx = btn.offsetWidth / thumbBaseW;
+    segThumb.style.transform = "translateX("+(btn.offsetLeft)+"px) scaleX("+sx.toFixed(4)+")";
+  }
+
+  function setView(mode){
+    var flow = mode==="flow";
+    bFlow.setAttribute("aria-pressed",flow?"true":"false");
+    bGrid.setAttribute("aria-pressed",flow?"false":"true");
+    positionThumb(flow?bFlow:bGrid);
+
+    var showEl = flow ? $("#flowView") : $("#gridView");
+    var hideEl = flow ? $("#gridView") : $("#flowView");
+    hideEl.classList.remove("active","anim-in");
+    showEl.classList.add("active");
+    showEl.classList.remove("anim-in");
+    void showEl.offsetWidth;
+    if(!reduceMotion) showEl.classList.add("anim-in");
+
+    if(flow){
+      requestAnimationFrame(function(){
+        measure();
+        cacheTrack();
+        scrollToIndex(current,false);
+        renderFlow();
+        scheduleFit();
+      });
+    }
+  }
+  bFlow.addEventListener("click",function(){ setView("flow"); });
+  bGrid.addEventListener("click",function(){ setView("grid"); });
+
+  // ---------- resize ----------
+  var resizeT=null;
+  function rebuildAfterResize(){
+    var keep=current;
+    buildCovers();
+    requestAnimationFrame(function(){
+      cacheTrack();
+      scrollToIndex(keep,false);
+      renderFlow();
+      scheduleFit();
+    });
+  }
+  window.addEventListener("resize",function(){
+    clearTimeout(resizeT);
+    resizeT=setTimeout(function(){
+      thumbBaseW=0;
+      if($("#flowView").classList.contains("active")){
+        rebuildAfterResize();
+      } else { measure(); cacheTrack(); }
+      positionThumb(bFlow.getAttribute("aria-pressed")==="true"?bFlow:bGrid);
+    },140);
+  });
+
+  // ================= close (embedding page controls the overlay) =================
+  function requestClose(){
+    try{ window.parent.postMessage('sa-press-close', '*'); }catch(_){}
+  }
+  $("#dlgClose").addEventListener("click",requestClose);
+
+  // ---------- boot: render immediately, full-page, no trigger ----------
+  function boot(){
+    buildCovers();
+    buildGrid();
+    positionThumb(bFlow);
+    requestAnimationFrame(function(){
+      measure();
+      cacheTrack();
+      scrollToIndex(current,false);
+      renderFlow();
+      scheduleFit();
+    });
+  }
+
+  // re-fit once images load (image height can shift the panel box)
+  window.addEventListener("load",function(){
+    positionThumb(bFlow.getAttribute("aria-pressed")==="true"?bFlow:bGrid);
+    if($("#flowView").classList.contains("active")){
+      requestAnimationFrame(function(){
+        measure(); cacheTrack(); scrollToIndex(current,false); renderFlow(); scheduleFit();
+      });
+    }
+  });
+
+  if(document.readyState==="complete" || document.readyState==="interactive"){
+    requestAnimationFrame(boot);
+  } else {
+    document.addEventListener("DOMContentLoaded",function(){ requestAnimationFrame(boot); });
+  }
+
+})();
+</script>
+</body>
+</html>
