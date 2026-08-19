@@ -964,12 +964,15 @@
   //           everywhere, including over the focused card ----------
   var wheelTarget=null, wheelRAF=null;
   function cancelWheel(){ if(wheelRAF){cancelAnimationFrame(wheelRAF);wheelRAF=null;} wheelTarget=null; }
-  // vertical wheel / two-finger scroll → step the CURRENT stack one article per gesture.
-  // Accumulate until a threshold, fire once, then swallow the momentum tail until the
-  // gesture goes quiet — so one deliberate swipe = one article (snap, not free-scroll).
-  var stackAccumY=0, stackWheelLock=false, stackQuietTimer=null;
-  var STACK_WHEEL_THRESHOLD=24;
-  function releaseStackWheel(){ stackWheelLock=false; stackAccumY=0; }
+  // vertical wheel / two-finger scroll → advance the CURRENT stack ONE article per scroll
+  // gesture (down = next). A trackpad flick emits a long momentum tail; we fire once when a
+  // gesture starts, then swallow that flick's decaying tail. The NEXT step re-arms the instant
+  // a genuine new scroll appears — a pause, or a fresh surge in speed after the tail began to
+  // decay — so it steps one-at-a-time yet never sits stuck waiting out the inertia.
+  var stackArmed=true, stackPeaked=false, stackPrevAbs=0, stackLastT=0;
+  var STACK_MIN=4;     // px — ignore trackpad jitter below this
+  var STACK_RISE=8;    // px surge over the previous event that marks a fresh flick over the tail
+  var STACK_GAP=120;   // ms of quiet that counts as a new gesture
   function wheelLoop(){
     wheelRAF=null;
     if(wheelTarget===null) return;
@@ -989,16 +992,21 @@
     var ay=Math.abs(e.deltaY), ax=Math.abs(e.deltaX);
     if(ay===0 && ax===0) return;
 
-    // Vertical intent → cycle the current stack's articles (down = next, matches ArrowDown).
+    // Vertical intent → advance the current stack one article per scroll gesture (down = next).
     if(ay >= ax){
       e.preventDefault();
-      if(stackQuietTimer) clearTimeout(stackQuietTimer);
-      stackQuietTimer = setTimeout(releaseStackWheel, 140);   // gesture ends when the wheel goes quiet
-      if(stackWheelLock) return;                              // already stepped this gesture — ignore momentum tail
-      stackAccumY += e.deltaY;
-      if(Math.abs(stackAccumY) >= STACK_WHEEL_THRESHOLD){
-        cycleFront(stackAccumY > 0 ? 1 : -1);
-        stackWheelLock=true; stackAccumY=0;
+      var wt = performance.now();
+      if(wt - stackLastT > STACK_GAP){ stackArmed = true; stackPeaked = false; }   // pause → new gesture
+      else if(!stackArmed){
+        if(ay < stackPrevAbs * 0.8) stackPeaked = true;                            // clearly decelerating → in the tail
+        else if(stackPeaked && ay > stackPrevAbs + STACK_RISE){                    // tail, then a real surge → new flick
+          stackArmed = true; stackPeaked = false;
+        }
+      }
+      stackPrevAbs = ay; stackLastT = wt;
+      if(stackArmed && ay >= STACK_MIN){
+        cycleFront(e.deltaY > 0 ? 1 : -1);                             // down (deltaY>0) = next
+        stackArmed = false; stackPeaked = false;
       }
       return;
     }
