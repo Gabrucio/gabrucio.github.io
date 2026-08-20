@@ -191,7 +191,9 @@
     width:100%;height:100%;
     /* transform + opacity are driven inline; keep them animatable for the cycle */
     transition:transform .46s cubic-bezier(.22,.61,.36,1), opacity .46s cubic-bezier(.22,.61,.36,1);
-    will-change:transform,opacity;
+    /* NB: no persistent will-change here — up to 5 cards × 8 stacks = 40 standing
+       composited layers is real memory on iOS. The transition still promotes each
+       card on demand during a cycle; that on-demand cost is momentary, not 40× parked. */
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
   }
@@ -326,7 +328,8 @@
     background:rgba(255,255,255,.9);
     border:1px solid var(--hair);
     box-shadow:0 6px 18px rgba(0,0,0,.10);
-    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    /* no backdrop-filter: it allocates a fresh blur buffer every time a stack
+       becomes centered mid-scroll; the pill background is already ~opaque. */
     opacity:0;
     pointer-events:none;
     transition:opacity .3s ease;
@@ -801,10 +804,14 @@
           el.style.opacity="0";
           el.style.pointerEvents="none";
           el.style.visibility="hidden";
+          // release the GPU backing store for stacks scrolled off-arc so memory
+          // doesn't accumulate across a long horizontal scroll (re-promoted below)
+          el.style.willChange="auto";
         }
         continue;
       }
       if(el.style.visibility==="hidden") el.style.visibility="";
+      if(el.style.willChange==="auto") el.style.willChange="";  // back in view → re-promote (CSS: transform,opacity)
 
       var clamped = Math.max(-3.4, Math.min(3.4, off));
       var ac = Math.abs(clamped);
@@ -818,8 +825,6 @@
       var z  = 1000 - ((a*100)|0);
 
       var dim = a<0.5 ? 0 : Math.min(a*0.14,0.34);
-      var blurRaw = a<0.6 ? 0 : Math.min((a-0.6)*1.05, 2.5);
-      var blur = Math.round(blurRaw*2)/2;
 
       el.style.transform = "perspective(1500px) translate3d("+tx.toFixed(1)+"px,0,"+tz.toFixed(0)+"px) rotateY("+ry.toFixed(1)+"deg) scale("+sc.toFixed(3)+")";
       el.style.opacity = op.toFixed(3);
@@ -842,11 +847,13 @@
         for(var j=0;j<links.length;j++){ links[j].setAttribute("tabindex", isCur ? "0" : "-1"); }
       }
 
-      // outer 3D filter (blur/dim of the whole stack when off-center)
-      var f = "";
-      if(blur>0.01) f += "blur("+blur+"px) ";
-      if(dim>0.01)  f += "brightness("+(1-dim).toFixed(3)+")";
-      el.style.filter = f || "none";
+      // Off-center depth cue = brightness dim only. We deliberately DON'T blur:
+      // filter:blur() on a 3D-transformed, will-change cover forces WebKit to
+      // allocate a full offscreen buffer (cover size × dpr) per visible cover,
+      // and ~7 of those during a horizontal flick blew past iOS Safari's per-tab
+      // memory limit → "A problem repeatedly occurred" crash loop. Dim + scale +
+      // rotateY + z already read as depth without the GPU-buffer cost.
+      el.style.filter = dim>0.01 ? "brightness("+(1-dim).toFixed(3)+")" : "none";
     }
 
     var frac = Math.abs(pos - Math.round(pos));
