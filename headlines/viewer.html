@@ -525,12 +525,26 @@
   // Project links: RELATIVE /projects/{slug}; "/" if no slug.
   function projHref(d){ return d.slug ? "/projects/"+d.slug : "/"; }
 
-  // meta (dot is a "·" glyph)
+  // client (brand) per project — mirrors data/projects.ts (site's single source of truth)
+  var CLIENT_BY_PROJECT = {
+    "ShieldFont":       "Playtype",
+    "Boring Phone":     "Heineken",
+    "#Optink":          "Junge Helden",
+    "Our Ice":          "Rogers",
+    "The Alchemist Ad": "Paulo Coelho",
+    "Pringheels":       "Pringles",
+    "Bar Experience":   "Heineken",
+    "Big Mac Can":      "McDonald's + Coke"
+  };
+
+  // meta (dot is a "·" glyph): COUNTRY · YEAR · PROJECT · CLIENT
   function meta(d){
     var m=[];
     if(d.country) m.push('<span>'+esc(d.country)+'</span><span class="dot" aria-hidden="true">·</span>');
     m.push('<span class="yr">'+esc(d.year)+'</span>');
     m.push('<span class="dot" aria-hidden="true">·</span><span class="pj">'+esc(d.project)+'</span>');
+    var client = d.client || CLIENT_BY_PROJECT[d.project];
+    if(client) m.push('<span class="dot" aria-hidden="true">·</span><span class="cl">'+esc(client)+'</span>');
     return m.join("");
   }
 
