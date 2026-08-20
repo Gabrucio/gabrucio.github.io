@@ -53,7 +53,7 @@
     --ghost-fill-hover:rgba(250,250,250,.08);
   }
   /* dark-only polish */
-  html.dark .btn-solid:hover{box-shadow:0 8px 22px rgba(0,0,0,.55);}
+  html.dark .btn-solid:hover, html.dark .btn-solid.is-hover{box-shadow:0 8px 22px rgba(0,0,0,.55);}
   html.dark .cf-nav button{box-shadow:0 4px 14px rgba(0,0,0,.5);}
   html.dark .stack-ind{background:rgba(23,23,26,.86);border-color:var(--hair);}
 
@@ -297,13 +297,16 @@
     transition:transform .16s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
   }
   /* GHOST "Read article" — subtle surface fill + border→ink + arrow travels up-right */
+  /* NB: the .cf-track scroll driver overlays the cards, so the buttons never get a
+     real :hover — JS mirrors the hovered CTA with .is-hover (resolveHover, same
+     elementFromPoint trick the click handler uses). Keep :hover + .is-hover paired. */
   .btn-ghost{background:transparent;border:1px solid var(--hair);color:var(--ink);}
   .btn-ghost .lucide-arrow{transform:translateY(0);}
-  .btn-ghost:hover{background:var(--ghost-fill-hover);border-color:var(--ink);}
-  .btn-ghost:hover .lucide-arrow{transform:translate(2px,-2px);}
+  .btn-ghost:hover, .btn-ghost.is-hover{background:var(--ghost-fill-hover);border-color:var(--ink);}
+  .btn-ghost:hover .lucide-arrow, .btn-ghost.is-hover .lucide-arrow{transform:translate(2px,-2px);}
   /* SOLID "Go to project" — clean lift + shadow + real shade change (no muddy gray) */
   .btn-solid{background:var(--solid-bg);border:1px solid var(--solid-bg);color:var(--solid-fg);}
-  .btn-solid:hover{
+  .btn-solid:hover, .btn-solid.is-hover{
     background:var(--solid-bg-hover);border-color:var(--solid-bg-hover);
     box-shadow:0 8px 22px rgba(0,0,0,.20);transform:translateY(-1px);
   }
@@ -1075,6 +1078,42 @@
   }
   cfTrack.addEventListener("pointerup",endDrag);
   cfTrack.addEventListener("pointercancel",endDrag);
+
+  // ---------- desktop hover: the .cf-track scroll driver overlays the cards, so the
+  //           CTA buttons never receive a real :hover. Resolve the hovered button the
+  //           same way the click handler resolves taps (elementFromPoint under the
+  //           track) and mirror it with an .is-hover class. Mouse only; rAF-throttled. ----------
+  var hoverEl=null, hoverRAF=null, hoverX=0, hoverY=0;
+  function resolveHover(){
+    hoverRAF=null;
+    cfTrack.style.pointerEvents="none";
+    var el = document.elementFromPoint(hoverX, hoverY);
+    cfTrack.style.pointerEvents="";
+    var a = (el && el.closest) ? el.closest("a.btn-ghost, a.btn-solid") : null;
+    // only the centered stack's FRONT card buttons get the hover cue (matches click gating)
+    if(a){
+      var aCover = a.closest(".cover");
+      if(!(aCover && coverEls.indexOf(aCover)===current && a.closest(".stack-front"))) a=null;
+    }
+    if(a!==hoverEl){
+      if(hoverEl) hoverEl.classList.remove("is-hover");
+      if(a) a.classList.add("is-hover");
+      hoverEl=a;
+    }
+    cfTrack.style.cursor = a ? "pointer" : "";
+  }
+  cfTrack.addEventListener("pointermove",function(e){
+    if(e.pointerType==="touch" || dragging) return;
+    hoverX=e.clientX; hoverY=e.clientY;
+    if(hoverRAF===null) hoverRAF=requestAnimationFrame(resolveHover);
+  });
+  function clearHover(){
+    if(hoverRAF){ cancelAnimationFrame(hoverRAF); hoverRAF=null; }
+    if(hoverEl){ hoverEl.classList.remove("is-hover"); hoverEl=null; }
+    cfTrack.style.cursor="";
+  }
+  cfTrack.addEventListener("pointerleave",clearHover);
+  cfTrack.addEventListener("pointerdown",clearHover);   // drop the cue when a drag begins
 
   // ---------- touch: a vertical swipe steps the current stack one article; horizontal
   //           swipes fall through to the native scroll-snap that pages between projects ----------
